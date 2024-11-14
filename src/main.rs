@@ -8,6 +8,9 @@ use embassy_time::{Duration, Timer};
 use gpio::{Level, Output};
 use {defmt_rtt as _, panic_probe as _};
 
+mod switch;
+use switch::*;
+
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     // Initialise Peripherals
