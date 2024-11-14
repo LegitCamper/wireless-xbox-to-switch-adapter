@@ -3,7 +3,10 @@
 
 use defmt::*;
 use embassy_executor::Spawner;
+use embassy_rp::bind_interrupts;
 use embassy_rp::gpio;
+use embassy_rp::peripherals::USB;
+use embassy_rp::usb::{Driver, InterruptHandler};
 use embassy_time::{Duration, Timer};
 use gpio::{Level, Output};
 use {defmt_rtt as _, panic_probe as _};
@@ -11,32 +14,20 @@ use {defmt_rtt as _, panic_probe as _};
 mod switch;
 use switch::*;
 
+bind_interrupts!(struct Irqs {
+    USBCTRL_IRQ => InterruptHandler<USB>;
+});
+
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     // Initialise Peripherals
     let p = embassy_rp::init(Default::default());
 
-    // Create LED
-    let mut led = Output::new(p.PIN_25, Level::Low);
+    spawner.spawn(wired(p.USB)).unwrap();
+}
 
-    // Loop
-    loop {
-        // Log
-        info!("LED On!");
-
-        // Turn LED On
-        led.set_high();
-
-        // Wait 100ms
-        Timer::after(Duration::from_millis(100)).await;
-
-        // Log
-        info!("LED Off!");
-
-        // Turn Led Off
-        led.set_low();
-
-        // Wait 100ms
-        Timer::after(Duration::from_millis(100)).await;
-    }
+// handles all the usb communication to the switch
+#[embassy_executor::task]
+async fn wired(usb: USB) {
+    let usb = Driver::new(usb, Irqs);
 }
