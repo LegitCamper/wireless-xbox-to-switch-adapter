@@ -23,7 +23,9 @@ embassy-time = { version = "0.3", features = [
 ] }
 embassy-rp = { version = "0.2", features = ["defmt", "time-driver"] }
 embassy-usb = "0.3.0"
+embassy-futures = "0.1.1"
 
+joycon-sys = { git = "https://github.com/Yamakaky/joy" }
 
 [profile.release]
 lto = true
