@@ -25,15 +25,11 @@ embassy-rp = { version = "0.2", features = ["defmt", "time-driver"] }
 embassy-usb = "0.3.0"
 embassy-futures = "0.1.1"
 
-joycon-sys = { git = "https://github.com/Yamakaky/joy" }
-
 [profile.release]
 lto = true
 opt-level = "s"
 incremental = false
 codegen-units = 1
-# note: debug = true is okay - debuginfo isn't flashed to the device!
-debug = true
 
 [profile.dev]
 lto = true

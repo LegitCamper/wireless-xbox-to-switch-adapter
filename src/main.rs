@@ -14,13 +14,7 @@ use embassy_usb::class::hid::HidWriter;
 use embassy_usb::class::hid::{self, HidReaderWriter};
 use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
-use joycon_sys::input::ButtonsStatus;
-use joycon_sys::input::DeviceStatus;
-use joycon_sys::input::NormalInputReport;
-use joycon_sys::input::StandardInputReport;
 use {defmt_rtt as _, panic_probe as _};
-
-use joycon_sys::{InputReport, OutputReport};
 
 mod switch;
 use switch::*;
@@ -43,16 +37,16 @@ async fn usb(usb: USB) {
     let usb = Driver::new(usb, Irqs);
 
     // Create embassy-usb Config
-    let mut config = Config::new(0x0F0D, 0x0092);
-    config.manufacturer = Some("HORI CO.,LTD.");
-    config.product = Some("POKKEN CONTROLLER");
-    config.serial_number = None;
+    let mut config = Config::new(0x057e, 0x2009);
+    config.manufacturer = Some("Nintendo Co., Ltd.");
+    config.product = Some("Pro Controller");
+    config.serial_number = Some("000000000001");
     config.max_packet_size_0 = 64;
-    config.device_class = 0x03;
+    config.device_class = 0x00;
     config.device_sub_class = 0x00;
     config.device_protocol = 0x00;
-    config.device_release = 0x01;
-    config.max_power = 300; // might need to be 500
+    config.device_release = 0x0200;
+    config.max_power = 500;
 
     // Create embassy-usb DeviceBuilder using the driver and config.
     // It needs some buffers for building the descriptors.
@@ -62,7 +56,8 @@ async fn usb(usb: USB) {
 
     let mut state = hid::State::new();
 
-    let report = InputReport::new();
+    let mut request_handler = switch::UsbRequestHandler {};
+    let mut device_handler = switch::UsbDeviceHandler {};
 
     let mut builder = Builder::new(
         usb,
@@ -73,14 +68,16 @@ async fn usb(usb: USB) {
         &mut control_buf,
     );
 
-    // Create classes on the builder.
+    builder.handler(&mut device_handler);
+
     let config = hid::Config {
-        report_descriptor: report.as_bytes(),
+        report_descriptor: &switch::HID_DESCRIPTOR,
         request_handler: None,
         poll_ms: 0x05,
         max_packet_size: 64,
     };
-    let mut hid_writer = HidWriter::<_, 1>::new(&mut builder, &mut state, config);
+
+    let hid = HidReaderWriter::<_, 64, 64>::new(&mut builder, &mut state, config);
 
     // Build the builder.
     let mut usb = builder.build();
@@ -88,21 +85,33 @@ async fn usb(usb: USB) {
     // Run the USB device.
     let usb_fut = usb.run();
 
+    let (reader, mut writer) = hid.split();
+
     // Do stuff with the class!
     let in_fut = async {
         loop {
             // every 1 second
             _ = Timer::after_secs(1).await;
-            let report = switch::get_test_report();
-            // Send the report.
-            match hid_writer.write(&report.as_bytes()).await {
-                Ok(()) => {}
-                Err(e) => warn!("Failed to send report: {:?}", e),
-            }
+            // let report = MouseReport {
+            //     buttons: 0,
+            //     x: rng.gen_range(-100..100), // random small x movement
+            //     y: rng.gen_range(-100..100), // random small y movement
+            //     wheel: 0,
+            //     pan: 0,
+            // };
+            // // Send the report.
+            // match writer.write_serialize(&report).await {
+            //     Ok(()) => {}
+            //     Err(e) => warn!("Failed to send report: {:?}", e),
+            // }
         }
+    };
+
+    let out_fut = async {
+        reader.run(false, &mut request_handler).await;
     };
 
     // Run everything concurrently.
     // If we had made everything `'static` above instead, we could do this using separate tasks instead.
-    join(usb_fut, in_fut).await;
+    join(usb_fut, join(in_fut, out_fut)).await;
 }
