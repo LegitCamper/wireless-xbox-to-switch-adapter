@@ -1,6 +1,69 @@
 use defmt::*;
-use embassy_usb::class::hid::{ReportId, RequestHandler};
 use embassy_usb::control::OutResponse;
+use embassy_usb::{
+    class::hid::{ReportId, RequestHandler},
+    Handler,
+};
+
+pub struct UsbDeviceHandler {}
+
+impl Handler for UsbDeviceHandler {
+    fn enabled(&mut self, _enabled: bool) {
+        info!("usb enabled")
+    }
+
+    fn reset(&mut self) {
+        info!("usb reset")
+    }
+
+    fn addressed(&mut self, addr: u8) {
+        info!("usb addressed: {:?}", addr)
+    }
+
+    fn configured(&mut self, configured: bool) {
+        info!("usb configured: {:?}", configured)
+    }
+
+    fn suspended(&mut self, suspended: bool) {
+        info!("usb suspended: {:?}", suspended)
+    }
+
+    fn remote_wakeup_enabled(&mut self, _enabled: bool) {}
+
+    fn set_alternate_setting(
+        &mut self,
+        iface: embassy_usb::types::InterfaceNumber,
+        alternate_setting: u8,
+    ) {
+    }
+
+    fn control_out(
+        &mut self,
+        req: embassy_usb::control::Request,
+        data: &[u8],
+    ) -> Option<OutResponse> {
+        let _ = (req, data);
+        info!("control req: {:?}, data: {:?}", req, data);
+        None
+    }
+
+    fn control_in<'a>(
+        &'a mut self,
+        req: embassy_usb::control::Request,
+        buf: &'a mut [u8],
+    ) -> Option<embassy_usb::control::InResponse<'a>> {
+        let _ = (req, buf);
+        None
+    }
+
+    fn get_string(
+        &mut self,
+        _index: embassy_usb::types::StringIndex,
+        _lang_id: u16,
+    ) -> Option<&str> {
+        None
+    }
+}
 
 pub struct UsbRequestHandler {}
 
@@ -76,7 +139,7 @@ impl usbd_hid::descriptor::AsInputReport for ProControllerReport {}
 pub static HID_DESCRIPTOR: &'static [u8] = &[
     // HID Descriptor
     0x05, 0x01, // Usage Page (Generic Desktop Ctrls)
-    0x15, 0x00, // Logical Minimum (0)
+    0x15, 0x00, // infoical Minimum (0)
     0x09, 0x04, // Usage (Joystick)
     0xA1, 0x01, // Collection (Application)
     0x85, 0x30, //   Report ID (48)
@@ -84,8 +147,8 @@ pub static HID_DESCRIPTOR: &'static [u8] = &[
     0x05, 0x09, //   Usage Page (Button)
     0x19, 0x01, //   Usage Minimum (0x01)
     0x29, 0x0A, //   Usage Maximum (0x0A)
-    0x15, 0x00, //   Logical Minimum (0)
-    0x25, 0x01, //   Logical Maximum (1)
+    0x15, 0x00, //   infoical Minimum (0)
+    0x25, 0x01, //   infoical Maximum (1)
     0x75, 0x01, //   Report Size (1)
     0x95, 0x0A, //   Report Count (10)
     0x55, 0x00, //   Unit Exponent (0)
@@ -94,8 +157,8 @@ pub static HID_DESCRIPTOR: &'static [u8] = &[
     0x05, 0x09, //   Usage Page (Button)
     0x19, 0x0B, //   Usage Minimum (0x0B)
     0x29, 0x0E, //   Usage Maximum (0x0E)
-    0x15, 0x00, //   Logical Minimum (0)
-    0x25, 0x01, //   Logical Maximum (1)
+    0x15, 0x00, //   infoical Minimum (0)
+    0x25, 0x01, //   infoical Maximum (1)
     0x75, 0x01, //   Report Size (1)
     0x95, 0x04, //   Report Count (4)
     0x81, 0x02, //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
@@ -108,15 +171,15 @@ pub static HID_DESCRIPTOR: &'static [u8] = &[
     0x0B, 0x31, 0x00, 0x01, 0x00, //     Usage (0x010031)
     0x0B, 0x32, 0x00, 0x01, 0x00, //     Usage (0x010032)
     0x0B, 0x35, 0x00, 0x01, 0x00, //     Usage (0x010035)
-    0x15, 0x00, //     Logical Minimum (0)
-    0x27, 0xFF, 0xFF, 0x00, 0x00, //     Logical Maximum (65534)
+    0x15, 0x00, //     infoical Minimum (0)
+    0x27, 0xFF, 0xFF, 0x00, 0x00, //     infoical Maximum (65534)
     0x75, 0x10, //     Report Size (16)
     0x95, 0x04, //     Report Count (4)
     0x81, 0x02, //     Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0, //   End Collection
     0x0B, 0x39, 0x00, 0x01, 0x00, //   Usage (0x010039)
-    0x15, 0x00, //   Logical Minimum (0)
-    0x25, 0x07, //   Logical Maximum (7)
+    0x15, 0x00, //   infoical Minimum (0)
+    0x25, 0x07, //   infoical Maximum (7)
     0x35, 0x00, //   Physical Minimum (0)
     0x46, 0x3B, 0x01, //   Physical Maximum (315)
     0x65, 0x14, //   Unit (System: English Rotation, Length: Centimeter)
@@ -126,8 +189,8 @@ pub static HID_DESCRIPTOR: &'static [u8] = &[
     0x05, 0x09, //   Usage Page (Button)
     0x19, 0x0F, //   Usage Minimum (0x0F)
     0x29, 0x12, //   Usage Maximum (0x12)
-    0x15, 0x00, //   Logical Minimum (0)
-    0x25, 0x01, //   Logical Maximum (1)
+    0x15, 0x00, //   infoical Minimum (0)
+    0x25, 0x01, //   infoical Maximum (1)
     0x75, 0x01, //   Report Size (1)
     0x95, 0x04, //   Report Count (4)
     0x81, 0x02, //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)

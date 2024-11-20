@@ -50,15 +50,14 @@ async fn usb(usb: USB) {
 
     // Create embassy-usb DeviceBuilder using the driver and config.
     // It needs some buffers for building the descriptors.
-    let mut config_descriptor = [0; 256];
-    let mut bos_descriptor = [0; 256];
+    let mut config_descriptor = [0; 64];
+    let mut bos_descriptor = [0; 64];
     let mut control_buf = [0; 64];
 
     let mut state = hid::State::new();
 
     let mut request_handler = UsbRequestHandler {};
-    // looks like the switch doesnt expect anything sent over the control endpoint
-    // let mut device_handler = switch::UsbDeviceHandler {};
+    let mut device_handler = switch::UsbDeviceHandler {};
 
     let mut builder = Builder::new(
         usb,
@@ -69,10 +68,7 @@ async fn usb(usb: USB) {
         &mut control_buf,
     );
 
-    // builder.handler(&mut device_handler);
-
-    builder.function(0x21, 0x00, 0x00);
-    builder.function(0x22, 0x00, 0x00);
+    builder.handler(&mut device_handler);
 
     let config = hid::Config {
         report_descriptor: &HID_DESCRIPTOR,
@@ -83,18 +79,12 @@ async fn usb(usb: USB) {
 
     let hid = HidReaderWriter::<_, 64, 64>::new(&mut builder, &mut state, config);
 
-    // Build the builder.
     let mut usb = builder.build();
-
-    // Run the USB device.
     let usb_fut = usb.run();
-
     let (reader, mut writer) = hid.split();
 
-    // Do stuff with the class!
     let in_fut = async {
         loop {
-            // every 1 second
             _ = Timer::after_secs(1).await;
             let report = ProControllerReport {
                 button: Button::SWITCH_A,
@@ -105,11 +95,11 @@ async fn usb(usb: USB) {
                 RY: 0,
                 VendorSpec: 0,
             };
-            // Send the report.
             match writer.write_serialize(&report).await {
                 Ok(()) => {}
                 Err(e) => warn!("Failed to send report: {:?}", e),
             }
+            info!("sent button, again");
         }
     };
 
