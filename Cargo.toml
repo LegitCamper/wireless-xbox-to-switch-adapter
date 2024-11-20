@@ -22,8 +22,12 @@ embassy-time = { version = "0.3", features = [
   "defmt-timestamp-uptime",
 ] }
 embassy-rp = { version = "0.2", features = ["defmt", "time-driver"] }
-embassy-usb = "0.3.0"
+embassy-usb = { version = "0.3.0", features = ["defmt"] }
 embassy-futures = "0.1.1"
+usbd-hid = "0.8.2"
+serde = { version = "1.0", default-features = false, features = [
+  "serde_derive",
+] }
 
 [profile.release]
 lto = true

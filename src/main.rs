@@ -56,8 +56,9 @@ async fn usb(usb: USB) {
 
     let mut state = hid::State::new();
 
-    let mut request_handler = switch::UsbRequestHandler {};
-    let mut device_handler = switch::UsbDeviceHandler {};
+    let mut request_handler = UsbRequestHandler {};
+    // looks like the switch doesnt expect anything sent over the control endpoint
+    // let mut device_handler = switch::UsbDeviceHandler {};
 
     let mut builder = Builder::new(
         usb,
@@ -68,10 +69,13 @@ async fn usb(usb: USB) {
         &mut control_buf,
     );
 
-    builder.handler(&mut device_handler);
+    // builder.handler(&mut device_handler);
+
+    builder.function(0x21, 0x00, 0x00);
+    builder.function(0x22, 0x00, 0x00);
 
     let config = hid::Config {
-        report_descriptor: &switch::HID_DESCRIPTOR,
+        report_descriptor: &HID_DESCRIPTOR,
         request_handler: None,
         poll_ms: 0x05,
         max_packet_size: 64,
@@ -92,18 +96,20 @@ async fn usb(usb: USB) {
         loop {
             // every 1 second
             _ = Timer::after_secs(1).await;
-            // let report = MouseReport {
-            //     buttons: 0,
-            //     x: rng.gen_range(-100..100), // random small x movement
-            //     y: rng.gen_range(-100..100), // random small y movement
-            //     wheel: 0,
-            //     pan: 0,
-            // };
-            // // Send the report.
-            // match writer.write_serialize(&report).await {
-            //     Ok(()) => {}
-            //     Err(e) => warn!("Failed to send report: {:?}", e),
-            // }
+            let report = ProControllerReport {
+                button: Button::SWITCH_A,
+                DPAD: Dpad::DPAD_TOP,
+                LX: 0,
+                LY: 0,
+                RX: 0,
+                RY: 0,
+                VendorSpec: 0,
+            };
+            // Send the report.
+            match writer.write_serialize(&report).await {
+                Ok(()) => {}
+                Err(e) => warn!("Failed to send report: {:?}", e),
+            }
         }
     };
 

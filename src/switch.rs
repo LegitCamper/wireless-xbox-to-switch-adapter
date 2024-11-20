@@ -1,83 +1,77 @@
-use embassy_usb::{class::hid::RequestHandler, Handler};
+use defmt::*;
+use embassy_usb::class::hid::{ReportId, RequestHandler};
+use embassy_usb::control::OutResponse;
 
 pub struct UsbRequestHandler {}
 
 impl RequestHandler for UsbRequestHandler {
-    fn get_report(
-        &mut self,
-        id: embassy_usb::class::hid::ReportId,
-        buf: &mut [u8],
-    ) -> Option<usize> {
-        let _ = (id, buf);
+    fn get_report(&mut self, id: ReportId, _buf: &mut [u8]) -> Option<usize> {
+        info!("Get report for {:?}", id);
         None
     }
 
-    fn set_report(
-        &mut self,
-        id: embassy_usb::class::hid::ReportId,
-        data: &[u8],
-    ) -> embassy_usb::control::OutResponse {
-        let _ = (id, data);
-        embassy_usb::control::OutResponse::Rejected
+    fn set_report(&mut self, id: ReportId, data: &[u8]) -> OutResponse {
+        info!("Set report for {:?}: {=[u8]}", id, data);
+        OutResponse::Accepted
     }
 
-    fn get_idle_ms(&mut self, id: Option<embassy_usb::class::hid::ReportId>) -> Option<u32> {
-        let _ = id;
-        None
+    fn set_idle_ms(&mut self, id: Option<ReportId>, dur: u32) {
+        info!("Set idle rate for {:?} to {:?}", id, dur);
     }
 
-    fn set_idle_ms(&mut self, id: Option<embassy_usb::class::hid::ReportId>, duration_ms: u32) {
-        let _ = (id, duration_ms);
-    }
-}
-
-pub struct UsbDeviceHandler {}
-
-impl Handler for UsbDeviceHandler {
-    fn enabled(&mut self, _enabled: bool) {}
-
-    fn reset(&mut self) {}
-
-    fn addressed(&mut self, _addr: u8) {}
-
-    fn configured(&mut self, _configured: bool) {}
-
-    fn suspended(&mut self, _suspended: bool) {}
-
-    fn remote_wakeup_enabled(&mut self, _enabled: bool) {}
-
-    fn set_alternate_setting(
-        &mut self,
-        iface: embassy_usb::types::InterfaceNumber,
-        alternate_setting: u8,
-    ) {
-        let _ = iface;
-        let _ = alternate_setting;
-    }
-
-    fn control_out(
-        &mut self,
-        req: embassy_usb::control::Request,
-        data: &[u8],
-    ) -> Option<embassy_usb::control::OutResponse> {
-        let _ = (req, data);
-        None
-    }
-
-    fn control_in<'a>(
-        &'a mut self,
-        req: embassy_usb::control::Request,
-        buf: &'a mut [u8],
-    ) -> Option<embassy_usb::control::InResponse<'a>> {
-        let _ = (req, buf);
-        None
-    }
-
-    fn get_string(&mut self, index: embassy_usb::types::StringIndex, lang_id: u16) -> Option<&str> {
-        // let _ = (index, embassy_usb::descriptor::lang_id);
+    fn get_idle_ms(&mut self, id: Option<ReportId>) -> Option<u32> {
+        info!("Get idle rate for {:?}", id);
         None
     }
 }
+
+#[derive(serde::Serialize)]
+pub enum Button {
+    SWITCH_Y = 0x01,
+    SWITCH_B = 0x02,
+    SWITCH_A = 0x04,
+    SWITCH_X = 0x08,
+    SWITCH_L = 0x10,
+    SWITCH_R = 0x20,
+    SWITCH_ZL = 0x40,
+    SWITCH_ZR = 0x80,
+    SWITCH_MINUS = 0x100,
+    SWITCH_PLUS = 0x200,
+    SWITCH_LCLICK = 0x400,
+    SWITCH_RCLICK = 0x800,
+    SWITCH_HOME = 0x1000,
+    SWITCH_CAPTURE = 0x2000,
+}
+
+#[derive(serde::Serialize)]
+pub enum Dpad {
+    DPAD_TOP = 0x00,
+    DPAD_TOP_RIGHT = 0x01,
+    DPAD_RIGHT = 0x02,
+    DPAD_BOTTOM_RIGHT = 0x03,
+    DPAD_BOTTOM = 0x04,
+    DPAD_BOTTOM_LEFT = 0x05,
+    DPAD_LEFT = 0x06,
+    DPAD_TOP_LEFT = 0x07,
+    DPAD_CENTER = 0x08,
+}
+
+const STICK_MIN: u8 = 0;
+const STICK_CENTER: u8 = 128;
+const STICK_MAX: u8 = 255;
+
+#[derive(serde::Serialize)]
+pub struct ProControllerReport {
+    pub button: Button,
+    pub DPAD: Dpad,
+    pub LX: u8, // Left  Stick X
+    pub LY: u8, // Left  Stick Y
+    pub RX: u8, // Right Stick X
+    pub RY: u8, // Right Stick Y
+    pub VendorSpec: u8,
+}
+
+impl usbd_hid::descriptor::AsInputReport for ProControllerReport {}
 
 pub static HID_DESCRIPTOR: &'static [u8] = &[
     // HID Descriptor
