@@ -5,66 +5,6 @@ use embassy_usb::{
     Handler,
 };
 
-pub struct UsbDeviceHandler {}
-
-impl Handler for UsbDeviceHandler {
-    fn enabled(&mut self, _enabled: bool) {
-        info!("usb enabled")
-    }
-
-    fn reset(&mut self) {
-        info!("usb reset")
-    }
-
-    fn addressed(&mut self, addr: u8) {
-        info!("usb addressed: {:?}", addr)
-    }
-
-    fn configured(&mut self, configured: bool) {
-        info!("usb configured: {:?}", configured)
-    }
-
-    fn suspended(&mut self, suspended: bool) {
-        info!("usb suspended: {:?}", suspended)
-    }
-
-    fn remote_wakeup_enabled(&mut self, _enabled: bool) {}
-
-    fn set_alternate_setting(
-        &mut self,
-        iface: embassy_usb::types::InterfaceNumber,
-        alternate_setting: u8,
-    ) {
-    }
-
-    fn control_out(
-        &mut self,
-        req: embassy_usb::control::Request,
-        data: &[u8],
-    ) -> Option<OutResponse> {
-        let _ = (req, data);
-        info!("control req: {:?}, data: {:?}", req, data);
-        None
-    }
-
-    fn control_in<'a>(
-        &'a mut self,
-        req: embassy_usb::control::Request,
-        buf: &'a mut [u8],
-    ) -> Option<embassy_usb::control::InResponse<'a>> {
-        let _ = (req, buf);
-        None
-    }
-
-    fn get_string(
-        &mut self,
-        _index: embassy_usb::types::StringIndex,
-        _lang_id: u16,
-    ) -> Option<&str> {
-        None
-    }
-}
-
 pub struct UsbRequestHandler {}
 
 impl RequestHandler for UsbRequestHandler {
