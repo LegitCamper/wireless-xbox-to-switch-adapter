@@ -38,18 +38,18 @@ async fn main(spawner: Spawner) {
     // spawn xbox controller task
     {
         // https://github.com/embassy-rs/embassy/tree/main/cyw43-firmware
-        let fw = include_bytes!("../cyw43-firmware/43439A0.bin");
-        let clm = include_bytes!("../cyw43-firmware/43439A0_clm.bin");
-        let btfw = include_bytes!("../cyw43-firmware/43439A0_btfw.bin");
+        // let fw = include_bytes!("../cyw43-firmware/43439A0.bin");
+        // let clm = include_bytes!("../cyw43-firmware/43439A0_clm.bin");
+        // let btfw = include_bytes!("../cyw43-firmware/43439A0_btfw.bin");
 
         // To make flashing faster for development, you may want to flash the firmwares independently
         // at hardcoded addresses, instead of baking them into the program with `include_bytes!`:
         //     probe-rs download 43439A0.bin --binary-format bin --chip RP2040 --base-address 0x10100000
         //     probe-rs download 43439A0_clm.bin --binary-format bin --chip RP2040 --base-address 0x10140000
         //     probe-rs download 43439A0_btfw.bin --binary-format bin --chip RP2040 --base-address 0x10141400
-        // let fw = unsafe { core::slice::from_raw_parts(0x10100000 as *const u8, 224190) };
-        // let clm = unsafe { core::slice::from_raw_parts(0x10140000 as *const u8, 4752) };
-        // let btfw = unsafe { core::slice::from_raw_parts(0x10141400 as *const u8, 6164) };
+        let fw = unsafe { core::slice::from_raw_parts(0x10100000 as *const u8, 224190) };
+        let clm = unsafe { core::slice::from_raw_parts(0x10140000 as *const u8, 4752) };
+        let btfw = unsafe { core::slice::from_raw_parts(0x10141400 as *const u8, 6164) };
 
         let pwr = Output::new(p.PIN_23, Level::Low);
         let cs = Output::new(p.PIN_25, Level::High);
@@ -66,12 +66,15 @@ async fn main(spawner: Spawner) {
 
         static STATE: StaticCell<cyw43::State> = StaticCell::new();
         let state = STATE.init(cyw43::State::new());
+        info!("before");
         let (_net_device, bt_device, mut control, runner) =
             cyw43::new_with_bluetooth(state, pwr, spi, fw, btfw).await;
+        info!("after");
         unwrap!(spawner.spawn(cyw43_task(runner)));
         control.init(clm).await;
 
-        bluetooth_setup(bt_device);
+        info!("setting up");
+        bluetooth_setup(bt_device).await;
     }
 }
 

@@ -22,7 +22,7 @@ embassy-time = { version = "0.3", features = [
   "defmt-timestamp-uptime",
 ] }
 embassy-rp = { version = "0.2", features = ["defmt", "time-driver", "rp2040"] }
-embassy-usb = { version = "0.3", features = ["defmt"] }
+embassy-usb = { version = "0.3", features = [] }
 embassy-futures = "0.1"
 embassy-sync = "0.6"
 serde = { version = "1.0", default-features = false, features = [
