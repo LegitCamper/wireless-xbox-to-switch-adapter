@@ -21,7 +21,10 @@ embassy-time = { version = "0.3", features = [
   "defmt",
   "defmt-timestamp-uptime",
 ] }
-embassy-rp = { version = "0.2", features = ["defmt", "time-driver", "rp2040"] }
+embassy-rp = { version = "0.2", features = [
+  "defmt",
+  "time-driver",
+] } # , "rp2040"
 embassy-usb = { version = "0.3", features = [] }
 embassy-futures = "0.1"
 embassy-sync = "0.6"
@@ -29,7 +32,10 @@ serde = { version = "1.0", default-features = false, features = [
   "serde_derive",
 ] }
 cyw43-pio = "0.2"
-cyw43 = { version = "0.2", features = ["defmt", "firmware-logs", "bluetooth"] }
+cyw43 = { version = "0.2", features = [
+  "defmt",
+  "firmware-logs",
+] } # , "bluetooth"
 
 usbd-hid = "0.8.2"
 static_cell = "2.1"
@@ -39,11 +45,13 @@ trouble-host = { version = "0.1.0", features = ["defmt", "gatt"] }
 
 [patch.crates-io]
 trouble-host = { git = "https://github.com/embassy-rs/trouble.git", rev = "4b8c0f499b34e46ca23a56e2d1640ede371722cf" }
-cyw43 = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
-embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
-embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
-embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
-embassy-time-queue-driver = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
+
+# These enable cyw24 bluetooth support 
+# cyw43 = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
+# embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
+# embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
+# embassy-time-driver = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
+# embassy-time-queue-driver = { git = "https://github.com/embassy-rs/embassy", rev = "be6eec772673ae6c46a6a022838b78cdc167bae4" }
 
 [profile.release]
 lto = true
