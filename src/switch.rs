@@ -1,11 +1,67 @@
 use defmt::info;
 use defmt::*;
+use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
 use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
+use embassy_usb::driver::{Driver, Endpoint, EndpointIn, EndpointOut};
 use embassy_usb::types::InterfaceNumber;
 use embassy_usb::{
     class::hid::{ReportId, RequestHandler},
     Handler,
 };
+use embassy_usb::{Builder, Config};
+
+pub struct HidEndpoints<'d, D: Driver<'d>> {
+    writer: HidWriter<'d, D, 64>,
+    reader: HidReader<'d, D, 64>,
+}
+
+impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
+    pub fn new(builder: &mut Builder<'d, D>, state: &'d mut hid::State<'d>) -> Self {
+        // add the hid interface class
+        let mut func = builder.function(0x03, 0x00, 0x00);
+        let mut interface = func.interface();
+        let interface_num = interface.interface_number();
+        let interface_str = interface.string();
+        info!("interface index: {}", interface_num.0);
+        info!("interface string index: {}", interface_str.0);
+        drop(func);
+
+        let config = hid::Config {
+            report_descriptor: &HID_DESCRIPTOR,
+            request_handler: None,
+            poll_ms: 0x08,
+            max_packet_size: 64,
+        };
+
+        let hid = HidReaderWriter::<_, 64, 64>::new(builder, state, config);
+        let (reader, writer) = hid.split();
+
+        HidEndpoints { reader, writer }
+    }
+
+    // Wait until the device's endpoints are enabled.
+    pub async fn wait_connected(&mut self) {
+        self.reader.ready().await;
+        self.writer.ready().await;
+    }
+
+    pub async fn test(&mut self) {
+        let report = ProControllerReport {
+            button: Button::SWITCH_A,
+            DPAD: Dpad::DPAD_TOP,
+            LX: 0,
+            LY: 0,
+            RX: 0,
+            RY: 0,
+            VendorSpec: 0,
+        };
+        match self.writer.write_serialize(&report).await {
+            Ok(()) => {}
+            Err(e) => warn!("Failed to send report: {:?}", e),
+        }
+        info!("sent button, again");
+    }
+}
 
 /// Handle CONTROL endpoint requests and responses. For many simple requests and responses
 /// you can get away with only using the control endpoint.
