@@ -29,7 +29,7 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         let config = hid::Config {
             report_descriptor: &HID_DESCRIPTOR,
             request_handler: None,
-            poll_ms: 0x08,
+            poll_ms: 0x05,
             max_packet_size: 64,
         };
 
@@ -46,20 +46,36 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
     }
 
     pub async fn test(&mut self) {
-        let report = ProControllerReport {
-            button: Button::SWITCH_A,
-            DPAD: Dpad::DPAD_TOP,
-            LX: 0,
-            LY: 0,
-            RX: 0,
-            RY: 0,
-            VendorSpec: 0,
-        };
-        match self.writer.write_serialize(&report).await {
-            Ok(()) => {}
-            Err(e) => warn!("Failed to send report: {:?}", e),
+        // try read
+        let mut buf = [0; 64];
+        match self.reader.read(&mut buf).await {
+            Ok(_) => {
+                info!("resp: {:?}", buf);
+                // got handshake req
+                if buf[0] == 128 {
+                    buf = [0; 64];
+                    // complete handshake
+                    unwrap!(self.writer.write(&[128, 2]).await);
+                }
+            }
+
+            Err(_) => (),
         }
-        info!("sent button, again");
+
+        // let report = ProControllerReport {
+        //     button: Button::SWITCH_A,
+        //     DPAD: Dpad::DPAD_TOP,
+        //     LX: 0,
+        //     LY: 0,
+        //     RX: 0,
+        //     RY: 0,
+        //     VendorSpec: 0,
+        // };
+        // match self.writer.write_serialize(&report).await {
+        //     Ok(()) => {}
+        //     Err(e) => warn!("Failed to send report: {:?}", e),
+        // }
+        // info!("sent button, again");
     }
 }
 
