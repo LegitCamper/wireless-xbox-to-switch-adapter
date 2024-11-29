@@ -31,7 +31,7 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         let config = hid::Config {
             report_descriptor: &HID_DESCRIPTOR,
             request_handler: None,
-            poll_ms: 0x05,
+            poll_ms: 0x08,
             max_packet_size: 64,
         };
 
