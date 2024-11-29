@@ -1,5 +1,6 @@
 use defmt::info;
 use defmt::*;
+use embassy_time::Timer;
 use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
 use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
 use embassy_usb::driver::{Driver, Endpoint, EndpointIn, EndpointOut};
@@ -13,6 +14,7 @@ use embassy_usb::{Builder, Config};
 pub struct HidEndpoints<'d, D: Driver<'d>> {
     writer: HidWriter<'d, D, 64>,
     reader: HidReader<'d, D, 64>,
+    handshake: bool,
 }
 
 impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
@@ -36,7 +38,11 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         let hid = HidReaderWriter::<_, 64, 64>::new(builder, state, config);
         let (reader, writer) = hid.split();
 
-        HidEndpoints { reader, writer }
+        HidEndpoints {
+            reader,
+            writer,
+            handshake: false,
+        }
     }
 
     // Wait until the device's endpoints are enabled.
@@ -51,31 +57,46 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         match self.reader.read(&mut buf).await {
             Ok(_) => {
                 info!("resp: {:?}", buf);
-                // got handshake req
-                if buf[0] == 128 {
-                    buf = [0; 64];
-                    // complete handshake
-                    unwrap!(self.writer.write(&[128, 2]).await);
+                // is nintendo protocol
+                if buf[0] == 0x80 {
+                    if buf[1] == 0x02 {
+                        // complete handshake
+                        self.handshake = true;
+                        info!("completing handshake");
+                        unwrap!(self.writer.write(&[0x81, 0x02]).await);
+                    } else if buf[1] == 0x02 {
+                        unwrap!(self.writer.write(&[0x81, 0x03]).await);
+                    }
                 }
             }
 
             Err(_) => (),
         }
 
-        // let report = ProControllerReport {
-        //     button: Button::SWITCH_A,
-        //     DPAD: Dpad::DPAD_TOP,
-        //     LX: 0,
-        //     LY: 0,
-        //     RX: 0,
-        //     RY: 0,
-        //     VendorSpec: 0,
-        // };
-        // match self.writer.write_serialize(&report).await {
-        //     Ok(()) => {}
-        //     Err(e) => warn!("Failed to send report: {:?}", e),
-        // }
-        // info!("sent button, again");
+        if self.handshake {
+            // let report = ProControllerReport {
+            //     button: Button::SWITCH_A,
+            //     DPAD: Dpad::DPAD_TOP,
+            //     LX: 0,
+            //     LY: 0,
+            //     RX: 0,
+            //     RY: 0,
+            //     VendorSpec: 0,
+            // };
+            // match self.writer.write_serialize(&report).await {
+            //     Ok(()) => {}
+            //     Err(e) => warn!("Failed to send report: {:?}", e),
+            // }
+            unwrap!(
+                self.writer
+                    .write(&[
+                        0x19, 0x01, 0x03, 0x07, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x01,
+                    ])
+                    .await
+            );
+            info!("sent button, again");
+        }
     }
 }
 
