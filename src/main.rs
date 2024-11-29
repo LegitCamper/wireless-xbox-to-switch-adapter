@@ -13,6 +13,7 @@ use embassy_rp::usb::{self, Driver};
 use embassy_time::Timer;
 use embassy_usb::class::hid;
 use embassy_usb::class::hid::HidWriter;
+use embassy_usb::types::InterfaceNumber;
 use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
 use static_cell::StaticCell;
@@ -98,7 +99,7 @@ async fn usb_task(usb: USB) {
     config.device_class = 0x00;
     config.device_sub_class = 0x00;
     config.device_protocol = 0x00;
-    config.device_release = 0x02;
+    config.device_release = 0x0200;
     config.composite_with_iads;
     config.max_power = 500;
     config.supports_remote_wakeup = true;
@@ -113,7 +114,7 @@ async fn usb_task(usb: USB) {
     let mut state = hid::State::new();
 
     let mut request_handler = UsbRequestHandler {};
-    // let mut device_handler = switch::UsbDeviceHandler {};
+    let mut device_handler = ControlHandler::new();
 
     let mut builder = Builder::new(
         usb,
@@ -124,7 +125,7 @@ async fn usb_task(usb: USB) {
         &mut control_buf,
     );
 
-    // add the usb interface class
+    // add the hid interface class
     let mut func = builder.function(0x03, 0x00, 0x00);
     let mut interface = func.interface();
     let interface_num = interface.interface_number();
@@ -133,12 +134,12 @@ async fn usb_task(usb: USB) {
     info!("interface string index: {}", interface_str.0);
     drop(func);
 
-    // builder.handler(&mut device_handler);
+    builder.handler(&mut device_handler);
 
     let config = hid::Config {
         report_descriptor: &HID_DESCRIPTOR,
         request_handler: Some(&mut request_handler),
-        poll_ms: 0x05,
+        poll_ms: 0x08,
         max_packet_size: 64,
     };
 

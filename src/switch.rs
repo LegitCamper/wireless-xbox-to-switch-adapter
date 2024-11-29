@@ -1,9 +1,74 @@
+use defmt::info;
 use defmt::*;
-use embassy_usb::control::OutResponse;
+use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
+use embassy_usb::types::InterfaceNumber;
 use embassy_usb::{
     class::hid::{ReportId, RequestHandler},
     Handler,
 };
+
+/// Handle CONTROL endpoint requests and responses. For many simple requests and responses
+/// you can get away with only using the control endpoint.
+pub struct ControlHandler {
+    pub if_num: InterfaceNumber,
+}
+
+impl ControlHandler {
+    pub fn new() -> Self {
+        Self {
+            if_num: InterfaceNumber(0),
+        }
+    }
+}
+
+impl Handler for ControlHandler {
+    /// Respond to HostToDevice control messages, where the host sends us a command and
+    /// optionally some data, and we can only acknowledge or reject it.
+    fn control_out<'a>(&'a mut self, req: Request, buf: &'a [u8]) -> Option<OutResponse> {
+        // Log the request before filtering to help with debugging.
+        // info!("Got control_out, request={}, buf={:a}", req, buf);
+
+        // Only handle Vendor request types to an Interface.
+        if req.request_type != RequestType::Vendor || req.recipient != Recipient::Interface {
+            return None;
+        }
+
+        // Ignore requests to other interfaces.
+        if req.index != self.if_num.0 as u16 {
+            return None;
+        }
+
+        // Accept request 100, value 200, reject others.
+        if req.request == 100 && req.value == 200 {
+            Some(OutResponse::Accepted)
+        } else {
+            Some(OutResponse::Rejected)
+        }
+    }
+
+    /// Respond to DeviceToHost control messages, where the host requests some data from us.
+    fn control_in<'a>(&'a mut self, req: Request, buf: &'a mut [u8]) -> Option<InResponse<'a>> {
+        // info!("Got control_in, request={}", req);
+
+        // Only handle Vendor request types to an Interface.
+        if req.request_type != RequestType::Vendor || req.recipient != Recipient::Interface {
+            return None;
+        }
+
+        // Ignore requests to other interfaces.
+        if req.index != self.if_num.0 as u16 {
+            return None;
+        }
+
+        // Respond "hello" to request 101, value 201, when asked for 5 bytes, otherwise reject.
+        if req.request == 101 && req.value == 201 && req.length == 5 {
+            buf[..5].copy_from_slice(b"hello");
+            Some(InResponse::Accepted(&buf[..5]))
+        } else {
+            Some(InResponse::Rejected)
+        }
+    }
+}
 
 pub struct UsbRequestHandler {}
 
