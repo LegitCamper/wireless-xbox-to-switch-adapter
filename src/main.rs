@@ -107,7 +107,6 @@ async fn usb_task(usb: USB) {
     // Create embassy-usb DeviceBuilder using the driver and config.
     // It needs some buffers for building the descriptors.
     let mut config_descriptor = [0; 64];
-    let mut bos_descriptor = [0; 41];
     let mut control_buf = [0; 64];
 
     let mut state = hid::State::new();
@@ -116,7 +115,7 @@ async fn usb_task(usb: USB) {
         usb,
         config,
         &mut config_descriptor,
-        &mut bos_descriptor,
+        &mut [], // pro controller does not implement bos
         &mut [], // no msos descriptors
         &mut control_buf,
     );
