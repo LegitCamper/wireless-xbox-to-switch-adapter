@@ -99,7 +99,7 @@ async fn usb_task(usb: USB) {
     config.device_sub_class = 0x00;
     config.device_protocol = 0x00;
     config.device_release = 0x0200;
-    config.bcd_usb = 0x02;
+    config.bcd_usb = 0x0110;
     config.composite_with_iads;
     config.max_power = 500;
     config.supports_remote_wakeup = true;
@@ -124,6 +124,7 @@ async fn usb_task(usb: USB) {
     let mut endpoints = switch::HidEndpoints::new(&mut builder, &mut state);
 
     let mut usb = builder.build();
+    info!("bos usage: {}", usb.buffer_usage());
     let usb_fut = usb.run();
 
     // Do some WebUSB transfers.
