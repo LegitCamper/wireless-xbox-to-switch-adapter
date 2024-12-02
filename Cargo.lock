@@ -374,7 +374,7 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "embassy-embedded-hal"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
@@ -423,12 +423,12 @@ checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 
 [[package]]
 name = "embassy-hal-internal"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "cortex-m",
  "critical-section",
@@ -445,7 +445,7 @@ checksum = "524eb3c489760508f71360112bca70f6e53173e6fe48fc5f0efd0f5ab217751d"
 [[package]]
 name = "embassy-net-driver"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 
 [[package]]
 name = "embassy-net-driver-channel"
@@ -461,7 +461,7 @@ dependencies = [
 [[package]]
 name = "embassy-net-driver-channel"
 version = "0.3.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-net-driver 0.2.0 (git+https://github.com/LegitCamper/embassy)",
@@ -471,7 +471,7 @@ dependencies = [
 [[package]]
 name = "embassy-rp"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "atomic-polyfill",
  "cfg-if",
@@ -523,7 +523,7 @@ dependencies = [
 [[package]]
 name = "embassy-sync"
 version = "0.6.1"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -536,7 +536,7 @@ dependencies = [
 [[package]]
 name = "embassy-time"
 version = "0.3.2"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -554,7 +554,7 @@ dependencies = [
 [[package]]
 name = "embassy-time-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "document-features",
 ]
@@ -562,12 +562,12 @@ dependencies = [
 [[package]]
 name = "embassy-time-queue-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 
 [[package]]
 name = "embassy-usb"
 version = "0.3.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "defmt",
  "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
@@ -582,7 +582,7 @@ dependencies = [
 [[package]]
 name = "embassy-usb-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d0b1819aa52666a4fca37211ddab82b01eea84ce"
+source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "defmt",
 ]
@@ -854,9 +854,9 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "indexmap"
-version = "2.6.0"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da"
+checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
@@ -1613,8 +1613,7 @@ dependencies = [
 [[package]]
 name = "usbd-hid"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6f291ab53d428685cc780f08a2eb9d5d6ff58622db2b36e239a4f715f1e184c"
+source = "git+https://github.com/LegitCamper/usbd-hid#174680b1c2225388df72784f1c137a70ab9ab557"
 dependencies = [
  "serde",
  "ssmarshal",
@@ -1625,8 +1624,7 @@ dependencies = [
 [[package]]
 name = "usbd-hid-descriptors"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0eee54712c5d778d2fb2da43b1ce5a7b5060886ef7b09891baeb4bf36910a3ed"
+source = "git+https://github.com/LegitCamper/usbd-hid#174680b1c2225388df72784f1c137a70ab9ab557"
 dependencies = [
  "bitfield 0.14.0",
 ]
@@ -1634,8 +1632,7 @@ dependencies = [
 [[package]]
 name = "usbd-hid-macros"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb573c76e7884035ac5e1ab4a81234c187a82b6100140af0ab45757650ccda38"
+source = "git+https://github.com/LegitCamper/usbd-hid#174680b1c2225388df72784f1c137a70ab9ab557"
 dependencies = [
  "byteorder",
  "hashbrown 0.13.2",
