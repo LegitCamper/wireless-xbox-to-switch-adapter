@@ -374,10 +374,9 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "embassy-embedded-hal"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
- "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
- "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-futures 0.1.1",
+ "embassy-sync 0.6.1",
  "embassy-time",
  "embedded-hal 0.2.7",
  "embedded-hal 1.0.0",
@@ -417,18 +416,16 @@ dependencies = [
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
 
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
 
 [[package]]
 name = "embassy-hal-internal"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "cortex-m",
  "critical-section",
@@ -439,13 +436,21 @@ dependencies = [
 [[package]]
 name = "embassy-net-driver"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524eb3c489760508f71360112bca70f6e53173e6fe48fc5f0efd0f5ab217751d"
 
 [[package]]
 name = "embassy-net-driver"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524eb3c489760508f71360112bca70f6e53173e6fe48fc5f0efd0f5ab217751d"
+
+[[package]]
+name = "embassy-net-driver-channel"
+version = "0.3.0"
+dependencies = [
+ "embassy-futures 0.1.1",
+ "embassy-net-driver 0.2.0",
+ "embassy-sync 0.6.1",
+]
 
 [[package]]
 name = "embassy-net-driver-channel"
@@ -459,19 +464,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "embassy-net-driver-channel"
-version = "0.3.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
-dependencies = [
- "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
- "embassy-net-driver 0.2.0 (git+https://github.com/LegitCamper/embassy)",
- "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
-]
-
-[[package]]
 name = "embassy-rp"
 version = "0.2.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "atomic-polyfill",
  "cfg-if",
@@ -481,9 +475,9 @@ dependencies = [
  "defmt",
  "document-features",
  "embassy-embedded-hal",
- "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-futures 0.1.1",
  "embassy-hal-internal",
- "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-sync 0.6.1",
  "embassy-time",
  "embassy-time-driver",
  "embassy-usb-driver",
@@ -509,8 +503,6 @@ dependencies = [
 [[package]]
 name = "embassy-sync"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3899a6e39fa3f54bf8aaf00979f9f9c0145a522f7244810533abbb748be6ce82"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -523,7 +515,8 @@ dependencies = [
 [[package]]
 name = "embassy-sync"
 version = "0.6.1"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3899a6e39fa3f54bf8aaf00979f9f9c0145a522f7244810533abbb748be6ce82"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -536,7 +529,6 @@ dependencies = [
 [[package]]
 name = "embassy-time"
 version = "0.3.2"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -554,7 +546,6 @@ dependencies = [
 [[package]]
 name = "embassy-time-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "document-features",
 ]
@@ -562,17 +553,15 @@ dependencies = [
 [[package]]
 name = "embassy-time-queue-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 
 [[package]]
 name = "embassy-usb"
 version = "0.3.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "defmt",
- "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
- "embassy-net-driver-channel 0.3.0 (git+https://github.com/LegitCamper/embassy)",
- "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-futures 0.1.1",
+ "embassy-net-driver-channel 0.3.0",
+ "embassy-sync 0.6.1",
  "embassy-usb-driver",
  "heapless",
  "ssmarshal",
@@ -582,7 +571,6 @@ dependencies = [
 [[package]]
 name = "embassy-usb-driver"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/embassy#d9918c35bec663e369abe43109ef000f9a5a4c77"
 dependencies = [
  "defmt",
 ]
