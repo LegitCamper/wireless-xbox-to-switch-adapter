@@ -13,6 +13,7 @@ use embassy_rp::usb::{self, Driver};
 use embassy_time::Timer;
 use embassy_usb::class::hid;
 use embassy_usb::types::InterfaceNumber;
+use embassy_usb::UsbVersion;
 use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
 use static_cell::StaticCell;
@@ -99,7 +100,7 @@ async fn usb_task(usb: USB) {
     config.device_sub_class = 0x00;
     config.device_protocol = 0x00;
     config.device_release = 0x0200;
-    config.bcd_usb = 0x02;
+    config.bcd_usb = UsbVersion::Two;
     config.composite_with_iads;
     config.max_power = 500;
     config.supports_remote_wakeup = true;
