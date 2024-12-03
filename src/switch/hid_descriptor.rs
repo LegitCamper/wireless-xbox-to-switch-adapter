@@ -1,3 +1,4 @@
+use serde::ser::{Serialize, SerializeTuple, Serializer};
 use usbd_hid::descriptor::gen_hid_descriptor;
 use usbd_hid::descriptor::generator_prelude::*;
 
@@ -59,23 +60,23 @@ pub const JOYSTICK_CENTER: u16 = 32767;
 // source: <https://gist.github.com/ToadKing/b883a8ccfa26adcc6ba9905e75aeb4f2>
 #[gen_hid_descriptor(
     (usage_page = GENERIC_DESKTOP, logical_min = 0, usage = JOYSTICK, collection = APPLICATION) = {
-        (report_id = 48, usage_page = GENERIC_DESKTOP, usage_page = BUTTON, usage_min = 0x01, usage_max = 0x0A, logical_min = 0, logical_max = 1) = {
+        (usage_page = GENERIC_DESKTOP, usage_page = BUTTON, usage_min = 0x01, usage_max = 0x0A, logical_min = 0, logical_max = 1, unit_exponent = 0) = { // report_id = 48 
             #[data, variable, absolute, no_wrap, linear, preferred, non_null] buttons=input;
         };
         (usage_page = BUTTON, usage_min = 0x0B, usage_max = 0x0E, logical_min = 0, logical_max = 1) = {
             #[data, variable, absolute, no_wrap, linear, preferred, non_null] special_buttons=input;
         };
         (usage = 0x010030, logical_min = 0, logical_max = 65534 ) = {
-            #[data, variable, absolute, no_wrap, linear, preferred, non_null] left_x=input;
+            #[item_settings data, variable] left_x=input;
         };
         (usage = 0x010031, logical_min = 0, logical_max = 65534) = {
-            #[data, variable, absolute, no_wrap, linear, preferred, non_null] left_y=input;
+            #[item_settings data, variable] left_y=input;
         };
         (usage = 0x010032, logical_min = 0, logical_max = 65534) = {
-            #[data, variable, absolute, no_wrap, linear, preferred, non_null] right_x=input;
+            #[item_settings data, variable] right_y=input;
         };
         (usage = 0x010035, logical_min = 0, logical_max = 65534) = {
-            #[data, variable, absolute, no_wrap, linear, preferred, non_null] right_y=input;
+            #[item_settings data, variable] right_y=input;
         };
         (usage = 0x010039, logical_min = 0, logical_max = 7) = {
             #[item_settings data, variable] d_pad=input;
