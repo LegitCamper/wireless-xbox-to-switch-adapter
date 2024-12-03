@@ -128,13 +128,9 @@ async fn usb_task(usb: USB) {
     info!("bos usage: {}", usb.buffer_usage());
     let usb_fut = usb.run();
 
-    // Do some WebUSB transfers.
     let in_fut = async {
-        loop {
-            _ = Timer::after_secs(1).await;
-            endpoints.wait_connected().await;
-            endpoints.test().await;
-        }
+        endpoints.wait_connected().await;
+        endpoints.run().await;
     };
 
     // Run everything concurrently.
