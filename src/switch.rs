@@ -78,7 +78,13 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
                     if buf[0] == 0x80 {
                         info!("Got Nintendo request: {} {}", buf[0], buf[1]);
                         // handles connection status
-                        if buf[1] == 0x02 {}
+                        if buf[1] == 0x01 {
+                            self.write(&[
+                                // just a test
+                                0x81, 0x01, 0x00, 0x02, 0x57, 0x30, 0xea, 0x8a, 0xbb, 0x7c,
+                            ])
+                            .await
+                        }
                         // handles handshakes
                         if buf[1] == 0x02 {
                             info!("completing handshake");
