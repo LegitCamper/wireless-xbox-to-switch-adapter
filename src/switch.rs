@@ -25,13 +25,13 @@ pub struct HidEndpoints<'d, D: Driver<'d>> {
 impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
     pub fn new(builder: &mut Builder<'d, D>, state: &'d mut hid::State<'d>) -> Self {
         // add the hid interface class
-        let mut func = builder.function(0x03, 0x00, 0x00);
-        let mut interface = func.interface();
-        let interface_num = interface.interface_number();
-        let interface_str = interface.string();
-        info!("interface index: {}", interface_num.0);
-        info!("interface string index: {}", interface_str.0);
-        drop(func);
+        // let mut func = builder.function(0x03, 0x00, 0x00);
+        // let mut interface = func.interface();
+        // let interface_num = interface.interface_number();
+        // let interface_str = interface.string();
+        // info!("interface index: {}", interface_num.0);
+        // info!("interface string index: {}", interface_str.0);
+        // drop(func);
 
         let config = hid::Config {
             report_descriptor: &SwitchProControllerReport::desc(),
