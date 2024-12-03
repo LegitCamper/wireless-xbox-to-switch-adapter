@@ -10,11 +10,10 @@ use embassy_usb::{
     Handler,
 };
 use embassy_usb::{Builder, Config};
+use usbd_hid::descriptor::{AsInputReport, SerializedDescriptor};
 
 mod hid_descriptor;
 use hid_descriptor::SwitchProControllerReport;
-use serde::Serialize;
-use usbd_hid::descriptor::SerializedDescriptor;
 
 pub struct HidEndpoints<'d, D: Driver<'d>> {
     writer: HidWriter<'d, D, 64>,
@@ -51,6 +50,20 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         self.writer.ready().await;
     }
 
+    pub async fn write(&mut self, msg: &[u8]) {
+        match self.writer.write(msg).await {
+            Ok(_) => (),
+            Err(error) => warn!("Usb write error: {}", error),
+        }
+    }
+
+    pub async fn write_serialize<IR: AsInputReport>(&mut self, msg: &IR) {
+        match self.writer.write_serialize(msg).await {
+            Ok(_) => (),
+            Err(error) => warn!("Usb write error: {}", error),
+        }
+    }
+
     pub async fn run(&mut self) {
         let mut buf = [0; 64];
 
@@ -63,20 +76,23 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
                 Ok(_) => {
                     // is nintendo protocol
                     if buf[0] == 0x80 {
+                        info!("Got Nintendo request: {} {}", buf[0], buf[1]);
+                        // handles connection status
+                        if buf[1] == 0x02 {}
+                        // handles handshakes
                         if buf[1] == 0x02 {
-                            // complete handshake
                             info!("completing handshake");
-                            unwrap!(self.writer.write(&[0x81, 0x02]).await);
-                        } else if buf[1] == 0x02 {
-                            unwrap!(self.writer.write(&[0x81, 0x03]).await);
+                            self.write(&[0x81, 0x02]).await;
+                        } else if buf[1] == 0x03 {
+                            self.write(&[0x81, 0x03]).await;
                         }
                     } else if buf[0] == 1 {
-                        info!("got hid command");
-                        unwrap!(self.writer.write_serialize(&controller).await);
+                        info!("Got hid command");
+                        self.write_serialize(&controller).await;
                     }
                 }
 
-                Err(error) => info!("usb read error: {}", error),
+                Err(error) => warn!("usb read error: {}", error),
             }
 
             // if self.handshake {
