@@ -36,6 +36,8 @@ impl ReportType {
             } else {
                 None
             }
+        } else if msg[0] == 0x01 {
+            Some(Self::Hid)
         } else {
             None
         }

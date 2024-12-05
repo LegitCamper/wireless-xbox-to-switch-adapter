@@ -176,7 +176,18 @@ async fn hid_reader(
                             // requires no response, but it also means the handshake is done
                             NintendoReportType::NoTimeout => NOTIFY_SIGNAL.signal(true),
                         },
-                        ReportType::Hid => (),
+                        ReportType::Hid => {
+                            channel
+                                .send(ResponseType::Bytes([
+                                    0x21, 0x4a, 0x91, 0x0, 0x80, 0x0, 0x10, 0x38, 0x7d, 0x3d, 0x88,
+                                    0x82, 0x0, 0x90, 0x10, 0x10, 0x80, 0x0, 0x0, 0x2, 0xff, 0xff,
+                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                                ]))
+                                .await
+                        }
                     }
                 }
             }
@@ -194,7 +205,7 @@ async fn notify(
     // wait till handshakes are done
     NOTIFY_SIGNAL.wait().await;
     loop {
-        Timer::after_millis(8).await;
+        Timer::after_millis(80).await;
         channel.send(ResponseType::ControllerUpdate).await;
     }
 }
