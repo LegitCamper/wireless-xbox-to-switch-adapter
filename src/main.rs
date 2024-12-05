@@ -130,6 +130,8 @@ async fn usb_task(usb: USB) {
 
     let in_fut = async {
         endpoints.wait_connected().await;
+        endpoints.init().await;
+        endpoints.handshake().await;
         endpoints.run().await;
     };
 
