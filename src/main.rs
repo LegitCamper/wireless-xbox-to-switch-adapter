@@ -167,26 +167,12 @@ async fn hid_reader(
                 if let Some(report) = ReportType::parse(&buf) {
                     match report {
                         ReportType::Nintendo(msg) => match msg {
-                            NintendoReportType::Handshake => {
-                                channel.send(ResponseType::Bytes(msg.resp())).await
-                            }
-                            NintendoReportType::Baudrate => {
-                                channel.send(ResponseType::Bytes(msg.resp())).await
-                            }
                             // requires no response, but it also means the handshake is done
                             NintendoReportType::NoTimeout => NOTIFY_SIGNAL.signal(true),
+                            _ => channel.send(ResponseType::Bytes(msg.resp().unwrap())).await,
                         },
-                        ReportType::Hid => {
-                            channel
-                                .send(ResponseType::Bytes([
-                                    0x21, 0x4a, 0x91, 0x0, 0x80, 0x0, 0x10, 0x38, 0x7d, 0x3d, 0x88,
-                                    0x82, 0x0, 0x90, 0x10, 0x10, 0x80, 0x0, 0x0, 0x2, 0xff, 0xff,
-                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                                    0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                                ]))
-                                .await
+                        ReportType::Hid(msg) => {
+                            channel.send(ResponseType::Bytes(msg.resp().unwrap())).await
                         }
                     }
                 }
@@ -205,7 +191,7 @@ async fn notify(
     // wait till handshakes are done
     NOTIFY_SIGNAL.wait().await;
     loop {
-        Timer::after_millis(80).await;
+        Timer::after_millis(8).await;
         channel.send(ResponseType::ControllerUpdate).await;
     }
 }
@@ -216,19 +202,14 @@ async fn hid_writer(
     channel: Receiver<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     writer.ready().await;
-    // Sends current connection status, and if the Joy-Con are connected,
-    // a MAC address and the type of controller.
+
+    // sends connection status
     unwrap!(
         writer
-            .write(&[
-                0x81, 0x1, 0x0, 0x3, 0x79, 0x5c, 0xed, 0xeb, 0x68, 0xdc, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0,
-            ])
+            .write(&NintendoReportType::Status.resp().unwrap())
             .await
     );
+
     loop {
         match channel.receive().await {
             ResponseType::Bytes(msg) => unwrap!(writer.write(&msg).await),
