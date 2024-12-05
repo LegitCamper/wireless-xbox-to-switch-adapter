@@ -31,7 +31,8 @@ impl ReportType {
             } else if msg[1] == 0x03 {
                 Some(Self::Nintendo(NintendoReportType::Baudrate))
             } else if msg[1] == 0x04 {
-                Some(Self::Nintendo(NintendoReportType::NoTimeout))
+                // Some(Self::Nintendo(NintendoReportType::NoTimeout))// guess this needs no respone
+                None
             } else {
                 None
             }

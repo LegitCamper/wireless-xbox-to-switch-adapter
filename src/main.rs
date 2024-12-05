@@ -10,11 +10,13 @@ use embassy_rp::gpio;
 use embassy_rp::peripherals::{DMA_CH0, PIO0, USB};
 use embassy_rp::pio::{self, Pio};
 use embassy_rp::usb::{self, Driver};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::channel::Channel;
 use embassy_sync::channel::Receiver;
 use embassy_sync::channel::Sender;
 use embassy_sync::mutex::Mutex;
+use embassy_sync::signal::Signal;
 use embassy_time::Timer;
 use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
 use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
@@ -142,9 +144,11 @@ async fn main(spawner: Spawner) {
             USB_RESPONSE_CHANNEL_SIZE,
         >::new());
 
+        info!("Usb setup and running");
         let (reader, writer) = hid.split();
         unwrap!(spawner.spawn(hid_reader(reader, channel.sender())));
         unwrap!(spawner.spawn(hid_writer(writer, channel.receiver())));
+        unwrap!(spawner.spawn(notify(channel.sender())));
 
         usb_fut.await;
     }
@@ -170,6 +174,22 @@ async fn hid_reader(
                 }
             }
             Err(error) => warn!("usb read error: {}", error),
+        }
+    }
+}
+
+pub static NOTIFY_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
+
+#[embassy_executor::task]
+async fn notify(
+    channel: Sender<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+) -> ! {
+    loop {
+        if NOTIFY_SIGNAL.wait().await {
+            loop {
+                Timer::after_millis(8).await;
+                channel.send(ResponseType::ControllerUpdate).await;
+            }
         }
     }
 }
