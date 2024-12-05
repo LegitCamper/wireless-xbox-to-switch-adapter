@@ -165,7 +165,6 @@ async fn hid_reader(
         match reader.read(&mut buf).await {
             Ok(_) => {
                 if let Some(report) = ReportType::parse(&buf) {
-                    info!("report: {:x}", buf);
                     match report {
                         ReportType::Nintendo(msg) => match msg {
                             NintendoReportType::Handshake => {
