@@ -14,34 +14,32 @@ use usbd_hid::descriptor::{AsInputReport, SerializedDescriptor};
 
 mod hid_descriptor;
 use hid_descriptor::SwitchProControllerReport;
+use hid_descriptor::HID_DESCRIPTOR;
 
 pub struct HidEndpoints<'d, D: Driver<'d>> {
-    writer: HidWriter<'d, D, 64>,
+    writer: HidWriter<'d, D, 128>,
     reader: HidReader<'d, D, 64>,
+    update_host: bool,
 }
 
 impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
     pub fn new(builder: &mut Builder<'d, D>, state: &'d mut hid::State<'d>) -> Self {
-        // add the hid interface class
-        // let mut func = builder.function(0x03, 0x00, 0x00);
-        // let mut interface = func.interface();
-        // let interface_num = interface.interface_number();
-        // let interface_str = interface.string();
-        // info!("interface index: {}", interface_num.0);
-        // info!("interface string index: {}", interface_str.0);
-        // drop(func);
-
         let config = hid::Config {
-            report_descriptor: &SwitchProControllerReport::desc(),
+            // report_descriptor: &SwitchProControllerReport::desc(),
+            report_descriptor: &HID_DESCRIPTOR,
             request_handler: None,
             poll_ms: 0x08,
             max_packet_size: 64,
         };
 
-        let hid = HidReaderWriter::<_, 64, 64>::new(builder, state, config);
+        let hid = HidReaderWriter::<_, 64, 128>::new(builder, state, config);
         let (reader, writer) = hid.split();
 
-        HidEndpoints { reader, writer }
+        HidEndpoints {
+            reader,
+            writer,
+            update_host: false,
+        }
     }
 
     // Wait until the device's endpoints are enabled.
@@ -72,6 +70,24 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
         info!("usb descriptor: {:x}", SwitchProControllerReport::desc());
 
         loop {
+            if self.update_host {
+                loop {
+                    Timer::after_millis(8).await;
+                    self.write(&[
+                        0x40, 0xb7, 0x30, 0x2d, 0xc7, 0x88, 0xff, 0xff, 0x43, 0x1, 0x81, 0xa, 0x5,
+                        0x0, 0x2d, 0x0, 0x37, 0xf6, 0x50, 0x67, 0x0, 0x0, 0x0, 0x0, 0x94, 0xb1,
+                        0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0, 0x40, 0x0, 0x0, 0x0,
+                        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                        0x0, 0x4, 0x2, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x30, 0x7c, 0x91, 0x0, 0x80,
+                        0x0, 0x10, 0xa8, 0x7d, 0xf3, 0x37, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                    ])
+                    .await
+                }
+            }
+
             match self.reader.read(&mut buf).await {
                 Ok(_) => {
                     // is nintendo protocol
@@ -91,10 +107,11 @@ impl<'d, D: Driver<'d>> HidEndpoints<'d, D> {
                             self.write(&[0x81, 0x02]).await;
                         } else if buf[1] == 0x03 {
                             self.write(&[0x81, 0x03]).await;
+                        } else if buf[1] == 0x04 {
+                            self.update_host = true
                         }
                     } else if buf[0] == 1 {
-                        info!("Got hid command");
-                        self.write_serialize(&controller).await;
+                        info!("Got hid command: {:x}", buf);
                     }
                 }
 

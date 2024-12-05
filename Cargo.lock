@@ -316,7 +316,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3983b127f13995e68c1e29071e5d115cd96f215ccb5e6812e3728cd6f92653b3"
 dependencies = [
- "thiserror 2.0.3",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
@@ -374,9 +374,10 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "embassy-embedded-hal"
 version = "0.2.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
- "embassy-futures 0.1.1",
- "embassy-sync 0.6.1",
+ "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-time",
  "embedded-hal 0.2.7",
  "embedded-hal 1.0.0",
@@ -416,16 +417,18 @@ dependencies = [
 [[package]]
 name = "embassy-futures"
 version = "0.1.1"
-
-[[package]]
-name = "embassy-futures"
-version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f878075b9794c1e4ac788c95b728f26aa6366d32eeb10c7051389f898f7d067"
 
 [[package]]
+name = "embassy-futures"
+version = "0.1.1"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
+
+[[package]]
 name = "embassy-hal-internal"
 version = "0.2.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "cortex-m",
  "critical-section",
@@ -436,21 +439,13 @@ dependencies = [
 [[package]]
 name = "embassy-net-driver"
 version = "0.2.0"
-
-[[package]]
-name = "embassy-net-driver"
-version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "524eb3c489760508f71360112bca70f6e53173e6fe48fc5f0efd0f5ab217751d"
 
 [[package]]
-name = "embassy-net-driver-channel"
-version = "0.3.0"
-dependencies = [
- "embassy-futures 0.1.1",
- "embassy-net-driver 0.2.0",
- "embassy-sync 0.6.1",
-]
+name = "embassy-net-driver"
+version = "0.2.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 
 [[package]]
 name = "embassy-net-driver-channel"
@@ -464,8 +459,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "embassy-net-driver-channel"
+version = "0.3.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
+dependencies = [
+ "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-net-driver 0.2.0 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
+]
+
+[[package]]
 name = "embassy-rp"
 version = "0.2.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "atomic-polyfill",
  "cfg-if",
@@ -475,9 +481,9 @@ dependencies = [
  "defmt",
  "document-features",
  "embassy-embedded-hal",
- "embassy-futures 0.1.1",
+ "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-hal-internal",
- "embassy-sync 0.6.1",
+ "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-time",
  "embassy-time-driver",
  "embassy-usb-driver",
@@ -503,18 +509,6 @@ dependencies = [
 [[package]]
 name = "embassy-sync"
 version = "0.6.1"
-dependencies = [
- "cfg-if",
- "critical-section",
- "embedded-io-async",
- "futures-sink",
- "futures-util",
- "heapless",
-]
-
-[[package]]
-name = "embassy-sync"
-version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3899a6e39fa3f54bf8aaf00979f9f9c0145a522f7244810533abbb748be6ce82"
 dependencies = [
@@ -527,8 +521,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "embassy-sync"
+version = "0.6.1"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
+dependencies = [
+ "cfg-if",
+ "critical-section",
+ "embedded-io-async",
+ "futures-sink",
+ "futures-util",
+ "heapless",
+]
+
+[[package]]
 name = "embassy-time"
 version = "0.3.2"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -546,6 +554,7 @@ dependencies = [
 [[package]]
 name = "embassy-time-driver"
 version = "0.1.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "document-features",
 ]
@@ -553,15 +562,17 @@ dependencies = [
 [[package]]
 name = "embassy-time-queue-driver"
 version = "0.1.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 
 [[package]]
 name = "embassy-usb"
 version = "0.3.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "defmt",
- "embassy-futures 0.1.1",
- "embassy-net-driver-channel 0.3.0",
- "embassy-sync 0.6.1",
+ "embassy-futures 0.1.1 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-net-driver-channel 0.3.0 (git+https://github.com/LegitCamper/embassy)",
+ "embassy-sync 0.6.1 (git+https://github.com/LegitCamper/embassy)",
  "embassy-usb-driver",
  "heapless",
  "ssmarshal",
@@ -571,6 +582,7 @@ dependencies = [
 [[package]]
 name = "embassy-usb-driver"
 version = "0.1.0"
+source = "git+https://github.com/LegitCamper/embassy#af02310edc60c568368d2e8805bb07a0797723a8"
 dependencies = [
  "defmt",
 ]
@@ -1493,11 +1505,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c006c85c7651b3cf2ada4584faa36773bd07bac24acfb39f3c431b36d7e667aa"
+checksum = "2f49a1853cf82743e3b7950f77e0f4d622ca36cf4317cba00c767838bac8d490"
 dependencies = [
- "thiserror-impl 2.0.3",
+ "thiserror-impl 2.0.4",
 ]
 
 [[package]]
@@ -1513,9 +1525,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f077553d607adc1caf65430528a576c757a71ed73944b66ebb58ef2bbd243568"
+checksum = "8381894bb3efe0c4acac3ded651301ceee58a15d47c2e34885ed1908ad667061"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1547,7 +1559,7 @@ dependencies = [
  "heapless",
  "num_enum 0.7.3",
  "static_cell",
- "thiserror 2.0.3",
+ "thiserror 2.0.4",
  "trouble-host-macros",
 ]
 

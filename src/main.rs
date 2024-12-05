@@ -104,7 +104,7 @@ async fn usb_task(usb: USB) {
     config.composite_with_iads;
     config.max_power = 500;
     config.supports_remote_wakeup = true;
-    config.self_powered = true;
+    config.self_powered = false;
 
     // Create embassy-usb DeviceBuilder using the driver and config.
     // It needs some buffers for building the descriptors.
