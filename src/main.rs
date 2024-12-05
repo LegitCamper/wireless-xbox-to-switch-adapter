@@ -165,10 +165,18 @@ async fn hid_reader(
         match reader.read(&mut buf).await {
             Ok(_) => {
                 if let Some(report) = ReportType::parse(&buf) {
+                    info!("report: {:x}", buf);
                     match report {
-                        ReportType::Nintendo(msg) => {
-                            channel.send(ResponseType::Bytes(msg.resp())).await
-                        }
+                        ReportType::Nintendo(msg) => match msg {
+                            NintendoReportType::Handshake => {
+                                channel.send(ResponseType::Bytes(msg.resp())).await
+                            }
+                            NintendoReportType::Baudrate => {
+                                channel.send(ResponseType::Bytes(msg.resp())).await
+                            }
+                            // requires no response, but it also means the handshake is done
+                            NintendoReportType::NoTimeout => NOTIFY_SIGNAL.signal(true),
+                        },
                         ReportType::Hid => (),
                     }
                 }
@@ -184,13 +192,11 @@ pub static NOTIFY_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 async fn notify(
     channel: Sender<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
+    // wait till handshakes are done
+    NOTIFY_SIGNAL.wait().await;
     loop {
-        if NOTIFY_SIGNAL.wait().await {
-            loop {
-                Timer::after_millis(8).await;
-                channel.send(ResponseType::ControllerUpdate).await;
-            }
-        }
+        Timer::after_millis(8).await;
+        channel.send(ResponseType::ControllerUpdate).await;
     }
 }
 

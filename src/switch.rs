@@ -18,6 +18,7 @@ pub enum ResponseType {
     ControllerUpdate,
 }
 
+#[derive(Debug)]
 pub enum ReportType {
     Nintendo(NintendoReportType),
     Hid,
@@ -31,8 +32,7 @@ impl ReportType {
             } else if msg[1] == 0x03 {
                 Some(Self::Nintendo(NintendoReportType::Baudrate))
             } else if msg[1] == 0x04 {
-                // Some(Self::Nintendo(NintendoReportType::NoTimeout))// guess this needs no respone
-                None
+                Some(Self::Nintendo(NintendoReportType::NoTimeout))
             } else {
                 None
             }
@@ -42,6 +42,7 @@ impl ReportType {
     }
 }
 
+#[derive(Debug)]
 pub enum NintendoReportType {
     Handshake,
     Baudrate,
