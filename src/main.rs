@@ -10,8 +10,14 @@ use embassy_rp::gpio;
 use embassy_rp::peripherals::{DMA_CH0, PIO0, USB};
 use embassy_rp::pio::{self, Pio};
 use embassy_rp::usb::{self, Driver};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::channel::Channel;
+use embassy_sync::channel::Receiver;
+use embassy_sync::channel::Sender;
+use embassy_sync::mutex::Mutex;
 use embassy_time::Timer;
-use embassy_usb::class::hid;
+use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
+use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
 use embassy_usb::types::InterfaceNumber;
 use embassy_usb::UsbVersion;
 use embassy_usb::{Builder, Config};
@@ -29,12 +35,12 @@ bind_interrupts!(struct Irqs {
     PIO0_IRQ_0 => pio::InterruptHandler<PIO0>;
 });
 
+const USB_RESPONSE_CHANNEL_SIZE: usize = 10;
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     // Initialise Peripherals
     let p = embassy_rp::init(Default::default());
-
-    spawner.spawn(usb_task(p.USB)).unwrap();
 
     // // spawn xbox controller task
     // {
@@ -77,6 +83,136 @@ async fn main(spawner: Spawner) {
     //     info!("setting up");
     //     bluetooth_setup(bt_device).await;
     // }
+
+    // spawns usb tasks
+    {
+        let usb = Driver::new(p.USB, Irqs);
+
+        // Create embassy-usb Config
+        let mut config = Config::new(0x057e, 0x2009);
+        config.manufacturer = Some("Nintendo Co., Ltd.");
+        config.product = Some("Pro Controller");
+        config.serial_number = Some("000000000001");
+        config.max_packet_size_0 = 64;
+        config.device_class = 0x00;
+        config.device_sub_class = 0x00;
+        config.device_protocol = 0x00;
+        config.device_release = 0x0200;
+        config.bcd_usb = UsbVersion::Two;
+        config.composite_with_iads;
+        config.max_power = 500;
+        config.supports_remote_wakeup = true;
+        config.self_powered = false;
+
+        // Create embassy-usb DeviceBuilder using the driver and config.
+        // It needs some buffers for building the descriptors.
+        static CONFIG_DESCRIPTOR: StaticCell<[u8; 64]> = StaticCell::new();
+        static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
+
+        static STATE: StaticCell<hid::State> = StaticCell::new();
+
+        let mut builder = Builder::new(
+            usb,
+            config,
+            CONFIG_DESCRIPTOR.init([0; 64]),
+            &mut [], // pro controller does not implement bos
+            &mut [], // no msos descriptors
+            CONTROL_BUF.init([0; 64]),
+        );
+
+        let config = hid::Config {
+            // report_descriptor: &SwitchProControllerReport::desc(),
+            report_descriptor: &HID_DESCRIPTOR,
+            request_handler: None,
+            poll_ms: 0x08,
+            max_packet_size: 64,
+        };
+
+        let hid =
+            HidReaderWriter::<_, 64, 64>::new(&mut builder, STATE.init(hid::State::new()), config);
+
+        let mut usb = builder.build();
+        let usb_fut = usb.run();
+
+        static CHANNEL: StaticCell<Channel<NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>> =
+            StaticCell::new();
+        let channel = CHANNEL.init(Channel::<
+            NoopRawMutex,
+            ResponseType,
+            USB_RESPONSE_CHANNEL_SIZE,
+        >::new());
+
+        let (reader, writer) = hid.split();
+        unwrap!(spawner.spawn(hid_reader(reader, channel.sender())));
+        unwrap!(spawner.spawn(hid_writer(writer, channel.receiver())));
+
+        usb_fut.await;
+    }
+}
+
+#[embassy_executor::task]
+async fn hid_reader(
+    mut reader: HidReader<'static, Driver<'static, USB>, 64>,
+    channel: Sender<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+) -> ! {
+    reader.ready().await;
+    let mut buf = [0; 64];
+    loop {
+        match reader.read(&mut buf).await {
+            Ok(_) => {
+                if let Some(report) = ReportType::parse(&buf) {
+                    match report {
+                        ReportType::Nintendo(msg) => {
+                            channel.send(ResponseType::Bytes(msg.resp())).await
+                        }
+                        ReportType::Hid => (),
+                    }
+                }
+            }
+            Err(error) => warn!("usb read error: {}", error),
+        }
+    }
+}
+
+#[embassy_executor::task]
+async fn hid_writer(
+    mut writer: HidWriter<'static, Driver<'static, USB>, 64>,
+    channel: Receiver<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+) -> ! {
+    writer.ready().await;
+    // Sends current connection status, and if the Joy-Con are connected,
+    // a MAC address and the type of controller.
+    unwrap!(
+        writer
+            .write(&[
+                0x81, 0x1, 0x0, 0x3, 0x79, 0x5c, 0xed, 0xeb, 0x68, 0xdc, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0,
+            ])
+            .await
+    );
+    loop {
+        match channel.receive().await {
+            ResponseType::Bytes(msg) => unwrap!(writer.write(&msg).await),
+            ResponseType::ControllerUpdate => {
+                // test update
+                unwrap!(
+                    writer
+                        .write(&[
+                            0x30, 0xd7, 0x91, 0x0, 0x80, 0x0, 0x10, 0x38, 0x7d, 0x3c, 0x88, 0x82,
+                            0xc, 0x90, 0xfe, 0x4, 0x1, 0x11, 0x10, 0x29, 0x0, 0xd9, 0xff, 0xe0,
+                            0xff, 0x92, 0xfe, 0x3, 0x1, 0x10, 0x10, 0x29, 0x0, 0xd8, 0xff, 0xde,
+                            0xff, 0x94, 0xfe, 0x2, 0x1, 0x11, 0x10, 0x2a, 0x0, 0xd9, 0xff, 0xde,
+                            0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                            0x0, 0x0,
+                        ])
+                        .await
+                )
+            }
+        }
+    }
 }
 
 #[embassy_executor::task]
@@ -84,58 +220,4 @@ async fn cyw43_task(
     runner: cyw43::Runner<'static, Output<'static>, PioSpi<'static, PIO0, 0, DMA_CH0>>,
 ) -> ! {
     runner.run().await
-}
-
-#[embassy_executor::task]
-async fn usb_task(usb: USB) {
-    let usb = Driver::new(usb, Irqs);
-
-    // Create embassy-usb Config
-    let mut config = Config::new(0x057e, 0x2009);
-    config.manufacturer = Some("Nintendo Co., Ltd.");
-    config.product = Some("Pro Controller");
-    config.serial_number = Some("000000000001");
-    config.max_packet_size_0 = 64;
-    config.device_class = 0x00;
-    config.device_sub_class = 0x00;
-    config.device_protocol = 0x00;
-    config.device_release = 0x0200;
-    config.bcd_usb = UsbVersion::Two;
-    config.composite_with_iads;
-    config.max_power = 500;
-    config.supports_remote_wakeup = true;
-    config.self_powered = false;
-
-    // Create embassy-usb DeviceBuilder using the driver and config.
-    // It needs some buffers for building the descriptors.
-    let mut config_descriptor = [0; 64];
-    let mut control_buf = [0; 64];
-
-    let mut state = hid::State::new();
-
-    let mut builder = Builder::new(
-        usb,
-        config,
-        &mut config_descriptor,
-        &mut [], // pro controller does not implement bos
-        &mut [], // no msos descriptors
-        &mut control_buf,
-    );
-
-    let mut endpoints = switch::HidEndpoints::new(&mut builder, &mut state);
-
-    let mut usb = builder.build();
-    info!("bos usage: {}", usb.buffer_usage());
-    let usb_fut = usb.run();
-
-    let in_fut = async {
-        endpoints.wait_connected().await;
-        endpoints.init().await;
-        endpoints.handshake().await;
-        endpoints.run().await;
-    };
-
-    // Run everything concurrently.
-    // If we had made everything `'static` above instead, we could do this using separate tasks instead.
-    join(usb_fut, in_fut).await;
 }
