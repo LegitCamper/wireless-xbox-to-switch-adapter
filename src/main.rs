@@ -24,8 +24,10 @@ use embassy_usb::types::InterfaceNumber;
 use embassy_usb::UsbVersion;
 use embassy_usb::{Builder, Config};
 use gpio::{Level, Output};
+use joycon_sys;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
+use core::cell::RefCell;
 
 mod switch;
 use switch::*;
@@ -38,6 +40,8 @@ bind_interrupts!(struct Irqs {
 });
 
 const USB_RESPONSE_CHANNEL_SIZE: usize = 10;
+
+static CONTROLLER_STATE: Mutex< NoopRawMutex, RefCell<Option<ControllerState>>> = Mutex::new(RefCell::new(ControllerState::new(None)));
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -80,8 +84,7 @@ async fn main(spawner: Spawner) {
     //         cyw43::new_with_bluetooth(state, pwr, spi, fw, btfw).await;
     //     info!("after");
     //     unwrap!(spawner.spawn(cyw43_task(runner)));
-    //     control.init(clm).await;
-
+    //     control.init(clm).await;t.is_special()
     //     info!("setting up");
     //     bluetooth_setup(bt_device).await;
     // }
@@ -91,7 +94,7 @@ async fn main(spawner: Spawner) {
         let usb = Driver::new(p.USB, Irqs);
 
         // Create embassy-usb Config
-        let mut config = Config::new(0x057e, 0x2009);
+        let mut config = Config::new(joycon_sys::NINTENDO_VENDOR_ID, joycon_sys::PRO_CONTROLLER);
         config.manufacturer = Some("Nintendo Co., Ltd.");
         config.product = Some("Pro Controller");
         config.serial_number = Some("000000000001");
@@ -123,7 +126,6 @@ async fn main(spawner: Spawner) {
         );
 
         let config = hid::Config {
-            // report_descriptor: &SwitchProControllerReport::desc(),
             report_descriptor: &HID_DESCRIPTOR,
             request_handler: None,
             poll_ms: 0x08,
@@ -136,11 +138,12 @@ async fn main(spawner: Spawner) {
         let mut usb = builder.build();
         let usb_fut = usb.run();
 
-        static CHANNEL: StaticCell<Channel<NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>> =
-            StaticCell::new();
+        static CHANNEL: StaticCell<
+            Channel<NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
+        > = StaticCell::new();
         let channel = CHANNEL.init(Channel::<
             NoopRawMutex,
-            ResponseType,
+            joycon_sys::InputReport,
             USB_RESPONSE_CHANNEL_SIZE,
         >::new());
 
@@ -154,25 +157,70 @@ async fn main(spawner: Spawner) {
     }
 }
 
+fn buf_to_report(buf: [u8; 64], report: &mut joycon_sys::OutputReport) {
+    info!(
+        "buf len: {}, report len: {}",
+        buf.len(),
+        report.as_bytes().len()
+    );
+    for idx in 0..report.byte_size() {
+        report.as_bytes_mut()[idx] = buf[idx]
+    }
+}
+
 #[embassy_executor::task]
 async fn hid_reader(
     mut reader: HidReader<'static, Driver<'static, USB>, 64>,
-    channel: Sender<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+    channel: Sender<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     reader.ready().await;
+    let mut output_report = joycon_sys::OutputReport::new();
     let mut buf = [0; 64];
     loop {
         match reader.read(&mut buf).await {
             Ok(_) => {
-                if let Some(report) = ReportType::parse(&buf) {
-                    match report {
-                        ReportType::Nintendo(msg) => match msg {
-                            // requires no response, but it also means the handshake is done
-                            NintendoReportType::NoTimeout => NOTIFY_SIGNAL.signal(true),
-                            _ => channel.send(ResponseType::Bytes(msg.resp().unwrap())).await,
-                        },
-                        ReportType::Hid(msg) => {
-                            channel.send(ResponseType::Bytes(msg.resp().unwrap())).await
+                buf_to_report(buf, &mut output_report);
+                if let Ok(e) = joycon_sys::output::OutputReportEnum::try_from(output_report) {
+                    match e {
+                        joycon_sys::output::OutputReportEnum::RumbleAndSubcmd(
+                            subcommand_request,
+                        ) => {
+                            if let Ok(cmd) = joycon_sys::output::SubcommandRequestEnum::try_from(
+                                subcommand_request,
+                            ) {
+                                match cmd {
+    joycon_sys::output::SubcommandRequestEnum::GetOnlyControllerState(_) => info!("wants controller state"),
+    joycon_sys::output::SubcommandRequestEnum::BluetoothManualPairing(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::RequestDeviceInfo(_) => info!("wants devidce info" ),
+    joycon_sys::output::SubcommandRequestEnum::SetInputReportMode(raw_id) => (),
+    joycon_sys::output::SubcommandRequestEnum::GetTriggerButtonsElapsedTime(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetShipmentMode(raw_id) => (),
+    joycon_sys::output::SubcommandRequestEnum::SPIRead(spiread_request) => (),
+    joycon_sys::output::SubcommandRequestEnum::SPIWrite(spiwrite_request) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetMCUConf(mcucommand) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetMCUState(raw_id) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetUnknownData(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetPlayerLights(player_lights) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetHomeLight(home_light) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetIMUMode(raw_id) => (),
+    joycon_sys::output::SubcommandRequestEnum::SetIMUSens(sensitivity) => (),
+    joycon_sys::output::SubcommandRequestEnum::EnableVibration(raw_id) => (),
+    joycon_sys::output::SubcommandRequestEnum::MaybeAccessory(accessory_command) => (),
+    joycon_sys::output::SubcommandRequestEnum::Unknown0x59(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::Unknown0x5a(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::Unknown0x5b(_) => (),
+    joycon_sys::output::SubcommandRequestEnum::Unknown0x5c(_) => (),
+}
+                            }
+                        }
+                        joycon_sys::output::OutputReportEnum::MCUFwUpdate(_) => {
+                            info!("Got update")
+                        }
+                        joycon_sys::output::OutputReportEnum::RumbleOnly(_) => {
+                            info!("Got rumble only ")
+                        }
+                        joycon_sys::output::OutputReportEnum::RequestMCUData(mcurequest) => {
+                            info!("Got mcu")
                         }
                     }
                 }
@@ -186,49 +234,40 @@ pub static NOTIFY_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
 #[embassy_executor::task]
 async fn notify(
-    channel: Sender<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+    channel: Sender<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     // wait till handshakes are done
     NOTIFY_SIGNAL.wait().await;
     loop {
         Timer::after_millis(8).await;
-        channel.send(ResponseType::ControllerUpdate).await;
+        // channel.send().await;
     }
 }
 
 #[embassy_executor::task]
 async fn hid_writer(
     mut writer: HidWriter<'static, Driver<'static, USB>, 64>,
-    channel: Receiver<'static, NoopRawMutex, ResponseType, USB_RESPONSE_CHANNEL_SIZE>,
+    channel: Receiver<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     writer.ready().await;
 
     // sends connection status
-    unwrap!(
-        writer
-            .write(&NintendoReportType::Status.resp().unwrap())
-            .await
+
+    let reply = joycon_sys::input::SubcommandReply::from(
+        joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
     );
+    joycon_sys::input::InputReportEnum::StandardAndSubcmd((, reply))
+    // unwrap!(
+    //     writer
+    //         .write(
+    //             .as_bytes()
+    //         )
+    //         .await
+    // );
 
     loop {
-        match channel.receive().await {
-            ResponseType::Bytes(msg) => unwrap!(writer.write(&msg).await),
-            ResponseType::ControllerUpdate => {
-                // test update
-                unwrap!(
-                    writer
-                        .write(&[
-                            0x30, 0xd7, 0x91, 0x0, 0x80, 0x0, 0x10, 0x38, 0x7d, 0x3c, 0x88, 0x82,
-                            0xc, 0x90, 0xfe, 0x4, 0x1, 0x11, 0x10, 0x29, 0x0, 0xd9, 0xff, 0xe0,
-                            0xff, 0x92, 0xfe, 0x3, 0x1, 0x10, 0x10, 0x29, 0x0, 0xd8, 0xff, 0xde,
-                            0xff, 0x94, 0xfe, 0x2, 0x1, 0x11, 0x10, 0x2a, 0x0, 0xd9, 0xff, 0xde,
-                            0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                            0x0, 0x0,
-                        ])
-                        .await
-                )
-            }
-        }
+        let input = channel.receive().await;
+        unwrap!(writer.write(input.as_bytes()).await);
     }
 }
 
