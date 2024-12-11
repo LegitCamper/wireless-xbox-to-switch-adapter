@@ -1,16 +1,13 @@
 #![no_std]
 #![no_main]
 
-use core::borrow::Borrow;
-
 use cyw43_pio::PioSpi;
 use defmt::*;
 use embassy_executor::Spawner;
-use embassy_futures::join::join;
 use embassy_rp::bind_interrupts;
 use embassy_rp::gpio;
 use embassy_rp::peripherals::{DMA_CH0, PIO0, USB};
-use embassy_rp::pio::{self, Pio};
+use embassy_rp::pio::{self};
 use embassy_rp::usb::{self, Driver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
@@ -22,11 +19,9 @@ use embassy_sync::once_lock::OnceLock;
 use embassy_sync::signal::Signal;
 use embassy_time::Timer;
 use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
-use embassy_usb::control::{InResponse, OutResponse, Recipient, Request, RequestType};
-use embassy_usb::types::InterfaceNumber;
 use embassy_usb::UsbVersion;
 use embassy_usb::{Builder, Config};
-use gpio::{Level, Output};
+use gpio::Output;
 use joycon_sys;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
@@ -186,48 +181,9 @@ async fn hid_reader(
         match reader.read(&mut buf).await {
             Ok(_) => {
                 buf_to_report(buf, &mut output_report);
-                if let Ok(e) = joycon_sys::output::OutputReportEnum::try_from(output_report) {
-                    match e {
-                        joycon_sys::output::OutputReportEnum::RumbleAndSubcmd(
-                            subcommand_request,
-                        ) => {
-                            if let Ok(cmd) = joycon_sys::output::SubcommandRequestEnum::try_from(
-                                subcommand_request,
-                            ) {
-                                match cmd {
-    joycon_sys::output::SubcommandRequestEnum::GetOnlyControllerState(_) => info!("wants controller state"),
-    joycon_sys::output::SubcommandRequestEnum::BluetoothManualPairing(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::RequestDeviceInfo(_) => info!("wants devidce info" ),
-    joycon_sys::output::SubcommandRequestEnum::SetInputReportMode(raw_id) => (),
-    joycon_sys::output::SubcommandRequestEnum::GetTriggerButtonsElapsedTime(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetShipmentMode(raw_id) => (),
-    joycon_sys::output::SubcommandRequestEnum::SPIRead(spiread_request) => (),
-    joycon_sys::output::SubcommandRequestEnum::SPIWrite(spiwrite_request) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetMCUConf(mcucommand) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetMCUState(raw_id) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetUnknownData(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetPlayerLights(player_lights) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetHomeLight(home_light) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetIMUMode(raw_id) => (),
-    joycon_sys::output::SubcommandRequestEnum::SetIMUSens(sensitivity) => (),
-    joycon_sys::output::SubcommandRequestEnum::EnableVibration(raw_id) => (),
-    joycon_sys::output::SubcommandRequestEnum::MaybeAccessory(accessory_command) => (),
-    joycon_sys::output::SubcommandRequestEnum::Unknown0x59(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::Unknown0x5a(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::Unknown0x5b(_) => (),
-    joycon_sys::output::SubcommandRequestEnum::Unknown0x5c(_) => (),
-}
-                            }
-                        }
-                        joycon_sys::output::OutputReportEnum::MCUFwUpdate(_) => {
-                            info!("Got update")
-                        }
-                        joycon_sys::output::OutputReportEnum::RumbleOnly(_) => {
-                            info!("Got rumble only ")
-                        }
-                        joycon_sys::output::OutputReportEnum::RequestMCUData(mcurequest) => {
-                            info!("Got mcu")
-                        }
+                if let Ok(request) = joycon_sys::output::OutputReportEnum::try_from(output_report) {
+                    if let Some(report) = handle_request(request).await {
+                        channel.send(report).await;
                     }
                 }
             }
