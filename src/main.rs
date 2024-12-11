@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::borrow::Borrow;
+
 use cyw43_pio::PioSpi;
 use defmt::*;
 use embassy_executor::Spawner;
@@ -16,6 +18,7 @@ use embassy_sync::channel::Channel;
 use embassy_sync::channel::Receiver;
 use embassy_sync::channel::Sender;
 use embassy_sync::mutex::Mutex;
+use embassy_sync::once_lock::OnceLock;
 use embassy_sync::signal::Signal;
 use embassy_time::Timer;
 use embassy_usb::class::hid::{self, HidReader, HidReaderWriter, HidWriter};
@@ -27,7 +30,6 @@ use gpio::{Level, Output};
 use joycon_sys;
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
-use core::cell::RefCell;
 
 mod switch;
 use switch::*;
@@ -41,12 +43,16 @@ bind_interrupts!(struct Irqs {
 
 const USB_RESPONSE_CHANNEL_SIZE: usize = 10;
 
-static CONTROLLER_STATE: Mutex< NoopRawMutex, RefCell<Option<ControllerState>>> = Mutex::new(RefCell::new(ControllerState::new(None)));
+static CONTROLLER_STATE: OnceLock<Mutex<NoopRawMutex, ControllerState>> = OnceLock::new();
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     // Initialise Peripherals
     let p = embassy_rp::init(Default::default());
+
+    CONTROLLER_STATE
+        .init(Mutex::new(ControllerState::new()))
+        .expect("Failed to init Controller State");
 
     // // spawn xbox controller task
     // {
@@ -240,7 +246,13 @@ async fn notify(
     NOTIFY_SIGNAL.wait().await;
     loop {
         Timer::after_millis(8).await;
-        // channel.send().await;
+        let report = joycon_sys::input::InputReportEnum::StandardAndSubcmd((
+            CONTROLLER_STATE.get().await.lock().await.standard(),
+            joycon_sys::input::SubcommandReply::from(
+                joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
+            ),
+        ));
+        channel.send(joycon_sys::InputReport::from(report)).await;
     }
 }
 
@@ -252,18 +264,17 @@ async fn hid_writer(
     writer.ready().await;
 
     // sends connection status
-
-    let reply = joycon_sys::input::SubcommandReply::from(
-        joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
+    let report = joycon_sys::input::InputReportEnum::StandardAndSubcmd((
+        CONTROLLER_STATE.get().await.lock().await.standard(),
+        joycon_sys::input::SubcommandReply::from(
+            joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
+        ),
+    ));
+    unwrap!(
+        writer
+            .write(joycon_sys::InputReport::from(report).as_bytes())
+            .await
     );
-    joycon_sys::input::InputReportEnum::StandardAndSubcmd((, reply))
-    // unwrap!(
-    //     writer
-    //         .write(
-    //             .as_bytes()
-    //         )
-    //         .await
-    // );
 
     loop {
         let input = channel.receive().await;

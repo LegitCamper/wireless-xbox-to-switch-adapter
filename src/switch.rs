@@ -23,6 +23,7 @@ pub fn device_info() -> DeviceInfo {
     )
 }
 
+#[derive(Debug)]
 pub struct ControllerState {
     buttons: ButtonsStatus,
     left_stick: Stick,
