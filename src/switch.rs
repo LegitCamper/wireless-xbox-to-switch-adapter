@@ -72,14 +72,30 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         None
                     }
                     SubcommandRequestEnum::SPIWrite(spiwrite_request) => None,
-                    SubcommandRequestEnum::SetMCUConf(mcucommand) => None,
-                    SubcommandRequestEnum::SetMCUState(raw_id) => None,
-                    SubcommandRequestEnum::SetUnknownData(_) => None,
-                    SubcommandRequestEnum::SetPlayerLights(player_lights) => None,
-                    SubcommandRequestEnum::SetHomeLight(home_light) => None,
-                    SubcommandRequestEnum::SetIMUMode(raw_id) => None,
-                    SubcommandRequestEnum::SetIMUSens(sensitivity) => None,
-                    SubcommandRequestEnum::EnableVibration(raw_id) => None,
+                    SubcommandRequestEnum::SetMCUConf(mcucommand) => {
+                        Some(SubcommandReplyEnum::SetMCUConf(MCUReport::new()))
+                    }
+                    SubcommandRequestEnum::SetMCUState(raw_id) => {
+                        Some(SubcommandReplyEnum::SetMCUState(()))
+                    }
+                    SubcommandRequestEnum::SetUnknownData(_) => {
+                        Some(SubcommandReplyEnum::SetUnknownData(()))
+                    }
+                    SubcommandRequestEnum::SetPlayerLights(player_lights) => {
+                        Some(SubcommandReplyEnum::SetPlayerLights(()))
+                    }
+                    SubcommandRequestEnum::SetHomeLight(home_light) => {
+                        Some(SubcommandReplyEnum::SetHomeLight(()))
+                    }
+                    SubcommandRequestEnum::SetIMUMode(raw_id) => {
+                        Some(SubcommandReplyEnum::SetIMUMode(()))
+                    }
+                    SubcommandRequestEnum::SetIMUSens(sensitivity) => {
+                        Some(SubcommandReplyEnum::SetIMUSens(()))
+                    }
+                    SubcommandRequestEnum::EnableVibration(raw_id) => {
+                        Some(SubcommandReplyEnum::EnableVibration(()))
+                    }
                     SubcommandRequestEnum::MaybeAccessory(accessory_command) => None,
                     SubcommandRequestEnum::Unknown0x59(_) => None,
                     SubcommandRequestEnum::Unknown0x5a(_) => None,

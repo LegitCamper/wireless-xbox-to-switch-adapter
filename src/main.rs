@@ -159,11 +159,6 @@ async fn main(spawner: Spawner) {
 }
 
 fn buf_to_report(buf: [u8; 64], report: &mut joycon_sys::OutputReport) {
-    info!(
-        "buf len: {}, report len: {}",
-        buf.len(),
-        report.as_bytes().len()
-    );
     for idx in 0..report.byte_size() {
         report.as_bytes_mut()[idx] = buf[idx]
     }
