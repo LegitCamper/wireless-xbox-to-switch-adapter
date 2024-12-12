@@ -50,16 +50,16 @@ joycon-sys = { path = "../joy" }
 [patch.crates-io]
 usbd-hid = { git = "https://github.com/LegitCamper/usbd-hid" }
 
-# embassy-usb = { git = "https://github.com/LegitCamper/embassy" }
-embassy-usb = { path = "../embassy/embassy-usb" }
-# embassy-rp = { git = "https://github.com/LegitCamper/embassy" }
-embassy-rp = { path = "../embassy/embassy-rp" }
-# embassy-time = { git = "https://github.com/LegitCamper/embassy" }
-embassy-time = { path = "../embassy/embassy-time" }
-# embassy-time-driver = { git = "https://github.com/LegitCamper/embassy" }
-embassy-time-driver = { path = "../embassy/embassy-time-driver" }
-# embassy-time-queue-driver = { git = "https://github.com/LegitCamper/embassy" }
-embassy-time-queue-driver = { path = "../embassy/embassy-time-queue-driver" }
+embassy-usb = { git = "https://github.com/LegitCamper/embassy" }
+# embassy-usb = { path = "../embassy/embassy-usb" }
+embassy-rp = { git = "https://github.com/LegitCamper/embassy" }
+# embassy-rp = { path = "../embassy/embassy-rp" }
+embassy-time = { git = "https://github.com/LegitCamper/embassy" }
+# embassy-time = { path = "../embassy/embassy-time" }
+embassy-time-driver = { git = "https://github.com/LegitCamper/embassy" }
+# embassy-time-driver = { path = "../embassy/embassy-time-driver" }
+embassy-time-queue-driver = { git = "https://github.com/LegitCamper/embassy" }
+# embassy-time-queue-driver = { path = "../embassy/embassy-time-queue-driver" }
 
 # These enable cyw24 bluetooth support 
 trouble-host = { git = "https://github.com/embassy-rs/trouble.git", rev = "31765f6bf34e79d8178ae1698da6b09c6e677b70" }
