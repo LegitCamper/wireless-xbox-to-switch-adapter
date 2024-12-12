@@ -71,28 +71,28 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                     }
                     SubcommandRequestEnum::SPIRead(spiread_request) => {
                         let range = spiread_request.range();
-                        if range == RANGE_FACTORY_CALIBRATION_SENSORS {
+                        if range.offset() == RANGE_FACTORY_CALIBRATION_SENSORS.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
                                     imu_factory_calib: SensorCalibration::default(),
                                 },
                             )))
-                        } else if range == RANGE_USER_CALIBRATION_SENSORS {
+                        } else if range.offset() == RANGE_USER_CALIBRATION_SENSORS.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
                                     imu_user_calib: UserSensorCalibration::default(),
                                 },
                             )))
-                        } else if range == RANGE_FACTORY_CALIBRATION_STICKS {
+                        } else if range.offset() == RANGE_FACTORY_CALIBRATION_STICKS.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
                                     sticks_factory_calib: SticksCalibration::default(),
                                 },
                             )))
-                        } else if range == RANGE_USER_CALIBRATION_STICKS {
+                        } else if range.offset() == RANGE_USER_CALIBRATION_STICKS.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
@@ -102,14 +102,14 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                                     },
                                 },
                             )))
-                        } else if range == RANGE_CONTROLLER_COLOR_USE_SPI {
+                        } else if range.offset() == RANGE_CONTROLLER_COLOR_USE_SPI.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
                                     use_spi_colors: UseSPIColors::No.into(),
                                 },
                             )))
-                        } else if range == RANGE_CONTROLLER_COLOR {
+                        } else if range.offset() == RANGE_CONTROLLER_COLOR.offset() {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
@@ -117,10 +117,13 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                                 },
                             )))
                         } else {
+                            warn!("Failed to read spi read range: {:x}", range.offset());
                             None
                         }
                     }
-                    SubcommandRequestEnum::SPIWrite(spiwrite_request) => None,
+                    SubcommandRequestEnum::SPIWrite(spiwrite_request) => {
+                        Some(SubcommandReplyEnum::SPIWrite(SPIWriteResult::new(0)))
+                    }
                     SubcommandRequestEnum::SetMCUConf(mcucommand) => {
                         Some(SubcommandReplyEnum::SetMCUConf(MCUReport::new()))
                     }
