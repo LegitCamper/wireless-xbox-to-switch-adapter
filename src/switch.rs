@@ -3,6 +3,8 @@ use defmt::*;
 use joycon_sys::input::*;
 use joycon_sys::mcu::*;
 use joycon_sys::output::*;
+use joycon_sys::spi::*;
+use joycon_sys::RawId;
 use joycon_sys::U16LE;
 
 pub fn device_info() -> DeviceInfo {
@@ -68,8 +70,55 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::SetShipmentMode(()))
                     }
                     SubcommandRequestEnum::SPIRead(spiread_request) => {
-                        // SubcommandReplyEnum::SPIRead()
-                        None
+                        let range = spiread_request.range();
+                        if range == RANGE_FACTORY_CALIBRATION_SENSORS {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    imu_factory_calib: SensorCalibration::default(),
+                                },
+                            )))
+                        } else if range == RANGE_USER_CALIBRATION_SENSORS {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    imu_user_calib: UserSensorCalibration::default(),
+                                },
+                            )))
+                        } else if range == RANGE_FACTORY_CALIBRATION_STICKS {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    sticks_factory_calib: SticksCalibration::default(),
+                                },
+                            )))
+                        } else if range == RANGE_USER_CALIBRATION_STICKS {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    sticks_user_calib: UserSticksCalibration {
+                                        left: UserStickCalibration::default(),
+                                        right: UserStickCalibration::default(),
+                                    },
+                                },
+                            )))
+                        } else if range == RANGE_CONTROLLER_COLOR_USE_SPI {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    use_spi_colors: UseSPIColors::No.into(),
+                                },
+                            )))
+                        } else if range == RANGE_CONTROLLER_COLOR {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    color: ControllerColor::default(),
+                                },
+                            )))
+                        } else {
+                            None
+                        }
                     }
                     SubcommandRequestEnum::SPIWrite(spiwrite_request) => None,
                     SubcommandRequestEnum::SetMCUConf(mcucommand) => {
