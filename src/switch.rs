@@ -1,4 +1,4 @@
-use super::CONTROLLER_STATE;
+use super::{CONTROLLER_STATE, NOTIFY_SIGNAL};
 use defmt::*;
 use joycon_sys::input::*;
 use joycon_sys::mcu::*;
@@ -17,6 +17,7 @@ pub fn device_info() -> DeviceInfo {
 
 #[derive(Debug)]
 pub struct ControllerState {
+    timer: u8,
     buttons: ButtonsStatus,
     left_stick: Stick,
     right_stick: Stick,
@@ -26,6 +27,7 @@ pub struct ControllerState {
 impl ControllerState {
     pub fn new() -> Self {
         Self {
+            timer: 0,
             buttons: Default::default(),
             left_stick: Stick::new(),
             right_stick: Stick::new(),
@@ -33,9 +35,15 @@ impl ControllerState {
         }
     }
 
-    pub fn standard(&self) -> StandardInputReport {
+    pub fn standard(&mut self) -> StandardInputReport {
+        if self.timer == 255 {
+            self.timer = 0
+        } else {
+            self.timer += 1
+        }
+
         StandardInputReport {
-            timer: 0,
+            timer: self.timer,
             info: self.status,
             buttons: self.buttons,
             left_stick: self.left_stick,
@@ -57,6 +65,7 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::BluetoothManualPairing(()))
                     }
                     SubcommandRequestEnum::RequestDeviceInfo(_) => {
+                        NOTIFY_SIGNAL.signal(true);
                         Some(SubcommandReplyEnum::RequestDeviceInfo(device_info()))
                     }
                     SubcommandRequestEnum::SetInputReportMode(raw_id) => {
