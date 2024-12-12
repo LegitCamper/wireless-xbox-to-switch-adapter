@@ -4,14 +4,13 @@ use joycon_sys::input::*;
 use joycon_sys::mcu::*;
 use joycon_sys::output::*;
 use joycon_sys::spi::*;
-use joycon_sys::RawId;
 use joycon_sys::U16LE;
 
 pub fn device_info() -> DeviceInfo {
     DeviceInfo::new(
         FirmwareVersion([0x03, 0x48]),
         WhichController::ProController.try_into().unwrap(),
-        MACAddress([0x7c, 0xbb, 0x8a, 0xea, 0x30, 0x57]),
+        MACAddress([0xDC, 0x68, 0xEB, 0xED, 0x5C, 0x79]),
         UseSPIColors::No.into(),
     )
 }
@@ -85,7 +84,21 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                                     imu_user_calib: UserSensorCalibration::default(),
                                 },
                             )))
+                        } else if range.offset() == 0x801b {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    imu_user_calib: UserSensorCalibration::default(),
+                                },
+                            )))
                         } else if range.offset() == RANGE_FACTORY_CALIBRATION_STICKS.offset() {
+                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
+                                spiread_request.range(),
+                                SPIData {
+                                    sticks_factory_calib: SticksCalibration::default(),
+                                },
+                            )))
+                        } else if range.offset() == 0x6046 {
                             Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
                                 spiread_request.range(),
                                 SPIData {
