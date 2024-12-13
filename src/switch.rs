@@ -65,7 +65,7 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::BluetoothManualPairing(()))
                     }
                     SubcommandRequestEnum::RequestDeviceInfo(_) => {
-                        NOTIFY_SIGNAL.signal(true);
+                        // NOTIFY_SIGNAL.signal(true);
                         Some(SubcommandReplyEnum::RequestDeviceInfo(device_info()))
                     }
                     SubcommandRequestEnum::SetInputReportMode(raw_id) => {
@@ -78,69 +78,11 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::SetShipmentMode(()))
                     }
                     SubcommandRequestEnum::SPIRead(spiread_request) => {
-                        let range = spiread_request.range();
-                        if range.offset() == RANGE_FACTORY_CALIBRATION_SENSORS.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    imu_factory_calib: SensorCalibration::default(),
-                                },
-                            )))
-                        } else if range.offset() == RANGE_USER_CALIBRATION_SENSORS.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    imu_user_calib: UserSensorCalibration::default(),
-                                },
-                            )))
-                        } else if range.offset() == 0x801b {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    imu_user_calib: UserSensorCalibration::default(),
-                                },
-                            )))
-                        } else if range.offset() == RANGE_FACTORY_CALIBRATION_STICKS.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    sticks_factory_calib: SticksCalibration::default(),
-                                },
-                            )))
-                        } else if range.offset() == 0x6046 {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    sticks_factory_calib: SticksCalibration::default(),
-                                },
-                            )))
-                        } else if range.offset() == RANGE_USER_CALIBRATION_STICKS.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    sticks_user_calib: UserSticksCalibration {
-                                        left: UserStickCalibration::default(),
-                                        right: UserStickCalibration::default(),
-                                    },
-                                },
-                            )))
-                        } else if range.offset() == RANGE_CONTROLLER_COLOR_USE_SPI.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    use_spi_colors: UseSPIColors::No.into(),
-                                },
-                            )))
-                        } else if range.offset() == RANGE_CONTROLLER_COLOR.offset() {
-                            Some(SubcommandReplyEnum::SPIRead(SPIReadResult::new(
-                                spiread_request.range(),
-                                SPIData {
-                                    color: ControllerColor::default(),
-                                },
-                            )))
-                        } else {
-                            warn!("Failed to read spi read range: {:x}", range.offset());
-                            None
+                        match handle_spi_read(spiread_request.range().offset()) {
+                            Some(spi_data) => Some(SubcommandReplyEnum::SPIRead(
+                                SPIReadResult::new(spiread_request.range(), spi_data),
+                            )),
+                            None => None,
                         }
                     }
                     SubcommandRequestEnum::SPIWrite(spiwrite_request) => {
@@ -171,12 +113,29 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::EnableVibration(()))
                     }
                     SubcommandRequestEnum::MaybeAccessory(accessory_command) => None,
-                    SubcommandRequestEnum::Unknown0x59(_) => None,
-                    SubcommandRequestEnum::Unknown0x5a(_) => None,
-                    SubcommandRequestEnum::Unknown0x5b(_) => None,
-                    SubcommandRequestEnum::Unknown0x5c(_) => None,
+                    SubcommandRequestEnum::Unknown0x59(_) => {
+                        Some(SubcommandReplyEnum::Unknown0x59(()))
+                    }
+                    SubcommandRequestEnum::Unknown0x5a(_) => {
+                        Some(SubcommandReplyEnum::Unknown0x5a(()))
+                    }
+                    SubcommandRequestEnum::Unknown0x5b(_) => {
+                        Some(SubcommandReplyEnum::Unknown0x5b(()))
+                    }
+                    SubcommandRequestEnum::Unknown0x5c(_) => {
+                        Some(SubcommandReplyEnum::Unknown0x5c(()))
+                    }
                 };
                 if let Some(reply) = reply {
+                    // debug
+                    if let SubcommandReplyEnum::SPIRead(res) = reply {
+                        info!(
+                            "range: {:x},\nspi res: {:x}",
+                            res.range().offset(),
+                            res.raw(),
+                        );
+                    }
+
                     Some(InputReportEnum::StandardAndSubcmd((
                         CONTROLLER_STATE.get().await.lock().await.standard(),
                         reply.into(),
@@ -208,6 +167,44 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
     if let Some(report) = report {
         Some(InputReport::from(report))
     } else {
+        None
+    }
+}
+
+fn spi_in_range(addr: u32, range: SPIRange) -> bool {
+    addr >= range.offset() && addr >= range.offset() + range.size() as u32
+}
+
+fn handle_spi_read(addr: u32) -> Option<SPIData> {
+    if spi_in_range(addr, RANGE_FACTORY_CALIBRATION_SENSORS) {
+        Some(SPIData {
+            imu_factory_calib: SensorCalibration::default(),
+        })
+    } else if spi_in_range(addr, RANGE_USER_CALIBRATION_SENSORS) {
+        Some(SPIData {
+            imu_user_calib: UserSensorCalibration::default(),
+        })
+    } else if spi_in_range(addr, RANGE_FACTORY_CALIBRATION_STICKS) {
+        Some(SPIData {
+            sticks_factory_calib: SticksCalibration::default(),
+        })
+    } else if spi_in_range(addr, RANGE_USER_CALIBRATION_STICKS) {
+        Some(SPIData {
+            sticks_user_calib: UserSticksCalibration {
+                left: LeftUserStickCalibration::default(),
+                right: RightUserStickCalibration::default(),
+            },
+        })
+    } else if spi_in_range(addr, RANGE_CONTROLLER_COLOR_USE_SPI) {
+        Some(SPIData {
+            use_spi_colors: UseSPIColors::No.into(),
+        })
+    } else if spi_in_range(addr, RANGE_CONTROLLER_COLOR) {
+        Some(SPIData {
+            color: ControllerColor::default(),
+        })
+    } else {
+        warn!("Failed to read spi read address: {:x}", addr);
         None
     }
 }

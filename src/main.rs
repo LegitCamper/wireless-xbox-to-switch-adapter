@@ -158,12 +158,6 @@ async fn main(spawner: Spawner) {
     }
 }
 
-fn buf_to_report(buf: [u8; 64], report: &mut joycon_sys::OutputReport) {
-    for idx in 0..report.byte_size() {
-        report.as_bytes_mut()[idx] = buf[idx]
-    }
-}
-
 #[embassy_executor::task]
 async fn hid_reader(
     mut reader: HidReader<'static, Driver<'static, USB>, 64>,
@@ -175,7 +169,9 @@ async fn hid_reader(
     loop {
         match reader.read(&mut buf).await {
             Ok(_) => {
-                buf_to_report(buf, &mut output_report);
+                for idx in 0..output_report.byte_size() {
+                    output_report.as_bytes_mut()[idx] = buf[idx]
+                }
                 if let Ok(request) = joycon_sys::output::OutputReportEnum::try_from(output_report) {
                     if let Some(report) = handle_request(request).await {
                         channel.send(report).await;
