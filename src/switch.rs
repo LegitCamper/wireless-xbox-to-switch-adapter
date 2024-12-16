@@ -79,9 +79,7 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                     }
                     SubcommandRequestEnum::SPIRead(spiread_request) => {
                         match handle_spi_read(spiread_request.range().offset()) {
-                            Some(spi_data) => Some(SubcommandReplyEnum::SPIRead(
-                                SPIReadResult::new(spiread_request.range(), spi_data),
-                            )),
+                            Some(spi_res) => Some(SubcommandReplyEnum::SPIRead(spi_res)),
                             None => None,
                         }
                     }
@@ -127,15 +125,6 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                     }
                 };
                 if let Some(reply) = reply {
-                    // debug
-                    if let SubcommandReplyEnum::SPIRead(res) = reply {
-                        info!(
-                            "range: {:x},\nspi res: {:x}",
-                            res.range().offset(),
-                            res.raw(),
-                        );
-                    }
-
                     Some(InputReportEnum::StandardAndSubcmd((
                         CONTROLLER_STATE.get().await.lock().await.standard(),
                         reply.into(),
@@ -175,34 +164,26 @@ fn spi_in_range(addr: u32, range: SPIRange) -> bool {
     addr >= range.offset() && addr >= range.offset() + range.size() as u32
 }
 
-fn handle_spi_read(addr: u32) -> Option<SPIData> {
-    if spi_in_range(addr, RANGE_FACTORY_CALIBRATION_SENSORS) {
-        Some(SPIData {
-            imu_factory_calib: SensorCalibration::default(),
-        })
-    } else if spi_in_range(addr, RANGE_USER_CALIBRATION_SENSORS) {
-        Some(SPIData {
-            imu_user_calib: UserSensorCalibration::default(),
-        })
-    } else if spi_in_range(addr, RANGE_FACTORY_CALIBRATION_STICKS) {
-        Some(SPIData {
-            sticks_factory_calib: SticksCalibration::default(),
-        })
-    } else if spi_in_range(addr, RANGE_USER_CALIBRATION_STICKS) {
-        Some(SPIData {
-            sticks_user_calib: UserSticksCalibration {
+fn handle_spi_read(addr: u32) -> Option<SPIReadResult> {
+    info!("GOT addr: {:x}", addr);
+    if spi_in_range(addr, SensorCalibration::range()) {
+        Some(SensorCalibration::default().into())
+    } else if spi_in_range(addr, UserSensorCalibration::range()) {
+        Some(UserSensorCalibration::default().into())
+    } else if spi_in_range(addr, SticksCalibration::range()) {
+        Some(SticksCalibration::default().into())
+    } else if spi_in_range(addr, UserSticksCalibration::range()) {
+        Some(
+            UserSticksCalibration {
                 left: LeftUserStickCalibration::default(),
                 right: RightUserStickCalibration::default(),
-            },
-        })
-    } else if spi_in_range(addr, RANGE_CONTROLLER_COLOR_USE_SPI) {
-        Some(SPIData {
-            use_spi_colors: UseSPIColors::No.into(),
-        })
-    } else if spi_in_range(addr, RANGE_CONTROLLER_COLOR) {
-        Some(SPIData {
-            color: ControllerColor::default(),
-        })
+            }
+            .into(),
+        )
+    } else if spi_in_range(addr, UseSPIColors::range()) {
+        Some(UseSPIColors::No.into())
+    } else if spi_in_range(addr, ControllerColor::range()) {
+        Some(ControllerColor::default().into())
     } else {
         warn!("Failed to read spi read address: {:x}", addr);
         None
