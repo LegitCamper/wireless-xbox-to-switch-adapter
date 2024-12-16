@@ -139,14 +139,10 @@ async fn main(spawner: Spawner) {
         let mut usb = builder.build();
         let usb_fut = usb.run();
 
-        static CHANNEL: StaticCell<
-            Channel<NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
-        > = StaticCell::new();
-        let channel = CHANNEL.init(Channel::<
-            NoopRawMutex,
-            joycon_sys::InputReport,
-            USB_RESPONSE_CHANNEL_SIZE,
-        >::new());
+        static CHANNEL: StaticCell<Channel<NoopRawMutex, [u8; 64], USB_RESPONSE_CHANNEL_SIZE>> =
+            StaticCell::new();
+        let channel =
+            CHANNEL.init(Channel::<NoopRawMutex, [u8; 64], USB_RESPONSE_CHANNEL_SIZE>::new());
 
         info!("Usb setup and running");
         let (reader, writer) = hid.split();
@@ -161,7 +157,7 @@ async fn main(spawner: Spawner) {
 #[embassy_executor::task]
 async fn hid_reader(
     mut reader: HidReader<'static, Driver<'static, USB>, 64>,
-    channel: Sender<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
+    channel: Sender<'static, NoopRawMutex, [u8; 64], USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     reader.ready().await;
     let mut output_report = joycon_sys::OutputReport::new();
@@ -169,12 +165,30 @@ async fn hid_reader(
     loop {
         match reader.read(&mut buf).await {
             Ok(_) => {
-                for idx in 0..output_report.byte_size() {
-                    output_report.as_bytes_mut()[idx] = buf[idx]
-                }
-                if let Ok(request) = joycon_sys::output::OutputReportEnum::try_from(output_report) {
-                    if let Some(report) = handle_request(request).await {
-                        channel.send(report).await;
+                // is handshaking packet
+                if buf[0] == 0x80 {
+                    match handshake_response(&buf) {
+                        Some(resp) => channel.send(resp).await,
+                        None => NOTIFY_SIGNAL.signal(true),
+                    }
+                } else {
+                    for idx in 0..output_report.byte_size() {
+                        output_report.as_bytes_mut()[idx] = buf[idx]
+                    }
+
+                    if let Ok(request) =
+                        joycon_sys::output::OutputReportEnum::try_from(output_report)
+                    {
+                        if let Some(report) = handle_request(request).await {
+                            channel
+                                .send(
+                                    joycon_sys::InputReport::from(report)
+                                        .as_bytes()
+                                        .try_into()
+                                        .expect("Not the enough bytes"),
+                                )
+                                .await;
+                        }
                     }
                 }
             }
@@ -186,9 +200,7 @@ async fn hid_reader(
 pub static NOTIFY_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
 #[embassy_executor::task]
-async fn notify(
-    channel: Sender<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
-) -> ! {
+async fn notify(channel: Sender<'static, NoopRawMutex, [u8; 64], USB_RESPONSE_CHANNEL_SIZE>) -> ! {
     // wait till handshakes are done
     NOTIFY_SIGNAL.wait().await;
     loop {
@@ -199,14 +211,28 @@ async fn notify(
                 joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
             ),
         ));
-        channel.send(joycon_sys::InputReport::from(report)).await;
+        channel
+            .send(
+                joycon_sys::InputReport::from(report)
+                    .as_bytes()
+                    .try_into()
+                    .expect("Not the enough bytes"),
+            )
+            .await;
+    }
+}
+
+pub async fn switch_write(writer: &mut HidWriter<'static, Driver<'static, USB>, 64>, data: &[u8]) {
+    let mut buf: [u8; 64] = [0; 64];
+    for (idx, byte) in data.iter().enumerate() {
+        buf[idx] = *byte;
     }
 }
 
 #[embassy_executor::task]
 async fn hid_writer(
     mut writer: HidWriter<'static, Driver<'static, USB>, 64>,
-    channel: Receiver<'static, NoopRawMutex, joycon_sys::InputReport, USB_RESPONSE_CHANNEL_SIZE>,
+    channel: Receiver<'static, NoopRawMutex, [u8; 64], USB_RESPONSE_CHANNEL_SIZE>,
 ) -> ! {
     writer.ready().await;
 
@@ -219,13 +245,12 @@ async fn hid_writer(
     ));
     unwrap!(
         writer
-            .write(joycon_sys::InputReport::from(report).as_bytes())
+            .write(&joycon_sys::InputReport::from(report).as_bytes())
             .await
     );
 
     loop {
-        let input = channel.receive().await;
-        unwrap!(writer.write(input.as_bytes()).await)
+        unwrap!(writer.write(&channel.receive().await).await)
     }
 }
 

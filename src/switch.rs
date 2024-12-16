@@ -15,6 +15,50 @@ pub fn device_info() -> DeviceInfo {
     )
 }
 
+pub fn handshake_response(msg: &[u8]) -> Option<[u8; 64]> {
+    if msg[1] == 0x01 {
+        NintendoReportType::Status.resp()
+    } else if msg[1] == 0x02 {
+        NintendoReportType::Handshake.resp()
+    } else if msg[1] == 0x03 {
+        NintendoReportType::Baudrate.resp()
+    } else if msg[1] == 0x04 {
+        NintendoReportType::NoTimeout.resp()
+    } else {
+        None
+    }
+}
+
+#[derive(Debug)]
+pub enum NintendoReportType {
+    Status,
+    Handshake,
+    Baudrate,
+    NoTimeout,
+}
+
+impl NintendoReportType {
+    pub fn resp(&self) -> Option<[u8; 64]> {
+        let mut resp = [0; 64];
+        match self {
+            NintendoReportType::Status => {
+                resp[..10]
+                    .copy_from_slice(&[0x81, 0x1, 0x0, 0x3, 0x79, 0x5c, 0xed, 0xeb, 0x68, 0xdc]);
+                Some(resp)
+            }
+            NintendoReportType::Handshake => {
+                resp[..2].copy_from_slice(&[0x81, 0x02]);
+                Some(resp)
+            }
+            NintendoReportType::Baudrate => {
+                resp[..2].copy_from_slice(&[0x81, 0x03]);
+                Some(resp)
+            }
+            NintendoReportType::NoTimeout => None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ControllerState {
     timer: u8,
@@ -65,7 +109,6 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::BluetoothManualPairing(()))
                     }
                     SubcommandRequestEnum::RequestDeviceInfo(_) => {
-                        NOTIFY_SIGNAL.signal(true);
                         Some(SubcommandReplyEnum::RequestDeviceInfo(device_info()))
                     }
                     SubcommandRequestEnum::SetInputReportMode(raw_id) => {
@@ -165,6 +208,7 @@ fn spi_in_range(addr: u32, range: SPIRange) -> bool {
 }
 
 fn handle_spi_read(addr: u32) -> Option<SPIReadResult> {
+    info!("spi read addr: {:x}", addr);
     if spi_in_range(addr, SensorCalibration::range()) {
         info!("Sending factory motion calibration");
         Some(SensorCalibration::default().into())

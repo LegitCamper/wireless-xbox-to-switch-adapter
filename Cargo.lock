@@ -897,7 +897,7 @@ dependencies = [
 [[package]]
 name = "joycon-sys"
 version = "0.1.0"
-source = "git+https://github.com/LegitCamper/joy?branch=fixes#f1681c0fd5595062734487a9f6eef96bcfc84f07"
+source = "git+https://github.com/LegitCamper/joy?branch=fixes#157d73c55b62b305f7e91a54e0cd465eca24bca5"
 dependencies = [
  "arrform",
  "bitfield 0.17.0",
