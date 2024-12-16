@@ -15,15 +15,15 @@ pub fn device_info() -> DeviceInfo {
     )
 }
 
-pub fn handshake_response(msg: &[u8]) -> Option<[u8; 64]> {
+pub fn handshake_response(msg: &[u8]) -> Option<NintendoReportType> {
     if msg[1] == 0x01 {
-        NintendoReportType::Status.resp()
+        Some(NintendoReportType::Status)
     } else if msg[1] == 0x02 {
-        NintendoReportType::Handshake.resp()
+        Some(NintendoReportType::Handshake)
     } else if msg[1] == 0x03 {
-        NintendoReportType::Baudrate.resp()
+        Some(NintendoReportType::Baudrate)
     } else if msg[1] == 0x04 {
-        NintendoReportType::NoTimeout.resp()
+        Some(NintendoReportType::NoTimeout)
     } else {
         None
     }
@@ -38,23 +38,28 @@ pub enum NintendoReportType {
 }
 
 impl NintendoReportType {
-    pub fn resp(&self) -> Option<[u8; 64]> {
+    pub fn resp(&self) -> [u8; 64] {
         let mut resp = [0; 64];
         match self {
             NintendoReportType::Status => {
                 resp[..10]
                     .copy_from_slice(&[0x81, 0x1, 0x0, 0x3, 0x79, 0x5c, 0xed, 0xeb, 0x68, 0xdc]);
-                Some(resp)
+                resp
             }
             NintendoReportType::Handshake => {
                 resp[..2].copy_from_slice(&[0x81, 0x02]);
-                Some(resp)
+                resp
             }
             NintendoReportType::Baudrate => {
                 resp[..2].copy_from_slice(&[0x81, 0x03]);
-                Some(resp)
+                resp
             }
-            NintendoReportType::NoTimeout => None,
+            NintendoReportType::NoTimeout => {
+                resp[..12].copy_from_slice(&[
+                    0x30, 0x44, 0x91, 0x0, 0x80, 0x0, 0x66, 0x58, 0x7e, 0x49, 0x58, 0x82,
+                ]);
+                resp
+            }
         }
     }
 }

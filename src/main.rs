@@ -168,8 +168,13 @@ async fn hid_reader(
                 // is handshaking packet
                 if buf[0] == 0x80 {
                     match handshake_response(&buf) {
-                        Some(resp) => channel.send(resp).await,
-                        None => NOTIFY_SIGNAL.signal(true),
+                        Some(resp) => {
+                            channel.send(resp.resp()).await;
+                            if let NintendoReportType::NoTimeout = resp {
+                                NOTIFY_SIGNAL.signal(true)
+                            }
+                        }
+                        None => warn!("unknown nintendo packet: {:x}", buf),
                     }
                 } else {
                     for idx in 0..output_report.byte_size() {
