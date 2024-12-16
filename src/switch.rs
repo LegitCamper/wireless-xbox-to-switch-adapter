@@ -65,7 +65,7 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
                         Some(SubcommandReplyEnum::BluetoothManualPairing(()))
                     }
                     SubcommandRequestEnum::RequestDeviceInfo(_) => {
-                        // NOTIFY_SIGNAL.signal(true);
+                        NOTIFY_SIGNAL.signal(true);
                         Some(SubcommandReplyEnum::RequestDeviceInfo(device_info()))
                     }
                     SubcommandRequestEnum::SetInputReportMode(raw_id) => {

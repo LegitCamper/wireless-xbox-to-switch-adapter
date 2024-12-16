@@ -242,39 +242,7 @@ async fn hid_writer(
 
     loop {
         let input = channel.receive().await;
-        // debug
-        {
-            if let Ok(input_enum) = joycon_sys::input::InputReportEnum::try_from(input) {
-                if let joycon_sys::input::InputReportEnum::StandardAndSubcmd((_, reply)) =
-                    input_enum
-                {
-                    if let Ok(reply_enum) = joycon_sys::input::SubcommandReplyEnum::try_from(reply)
-                    {
-                        match reply_enum {
-                            joycon_sys::input::SubcommandReplyEnum::SPIRead(spiread_result) => {
-                                // let raw = spiread_result.raw();
-                                // if raw[0] == 0xb2 {
-                                //     info!("found cal")
-                                // } else {
-                                //     info!("got {:x}", raw)
-                                // }
-                                info!("packet: {:x}", input.as_bytes());
-                                unwrap!(writer.write(input.as_bytes()).await)
-                            }
-                            _ => unwrap!(writer.write(input.as_bytes()).await),
-                        }
-                    } else {
-                        unwrap!(writer.write(input.as_bytes()).await)
-                    }
-                } else {
-                    unwrap!(writer.write(input.as_bytes()).await)
-                }
-            } else {
-                unwrap!(writer.write(input.as_bytes()).await)
-            }
-        }
-
-        // unwrap!(writer.write(input.as_bytes()).await)
+        unwrap!(writer.write(input.as_bytes()).await)
     }
 }
 
