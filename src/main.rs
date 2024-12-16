@@ -45,23 +45,6 @@ async fn main(spawner: Spawner) {
     // Initialise Peripherals
     let p = embassy_rp::init(Default::default());
 
-    // debug
-    let left_calibration = joycon_sys::spi::LeftUserStickCalibration::default();
-    info!("left_calib: {:x}", unsafe {
-        core::slice::from_raw_parts(
-            &left_calibration as *const _ as *const u8, // Pointer to the struct as bytes
-            core::mem::size_of::<joycon_sys::spi::LeftStickCalibration>(), // Size of the struct in bytes
-        )
-    });
-
-    let right_calibration = joycon_sys::spi::RightUserStickCalibration::default();
-    info!("right_calib: {:x}", unsafe {
-        core::slice::from_raw_parts(
-            &right_calibration as *const _ as *const u8, // Pointer to the struct as bytes
-            core::mem::size_of::<joycon_sys::spi::RightStickCalibration>(), // Size of the struct in bytes
-        )
-    });
-
     CONTROLLER_STATE
         .init(Mutex::new(ControllerState::new()))
         .expect("Failed to init Controller State");

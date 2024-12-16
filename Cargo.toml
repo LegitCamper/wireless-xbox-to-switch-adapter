@@ -45,20 +45,20 @@ portable-atomic = { version = "1.5", features = ["critical-section"] }
 bt-hci = { version = "0.1.0", default-features = false, features = ["defmt"] }
 trouble-host = { version = "0.1.0", features = ["defmt", "gatt"] }
 
-joycon-sys = { path = "../joy" }
+joycon-sys = { git = "https://github.com/LegitCamper/joy", branch = "fixes" }
 
 [patch.crates-io]
 usbd-hid = { git = "https://github.com/LegitCamper/usbd-hid" }
 
-embassy-usb = { git = "https://github.com/LegitCamper/embassy" }
+embassy-usb = { git = "https://github.com/LegitCamper/embassy", branch = "reject-device-qualifier" }
 # embassy-usb = { path = "../embassy/embassy-usb" }
-embassy-rp = { git = "https://github.com/LegitCamper/embassy" }
+embassy-rp = { git = "https://github.com/LegitCamper/embassy", branch = "reject-device-qualifier" }
 # embassy-rp = { path = "../embassy/embassy-rp" }
-embassy-time = { git = "https://github.com/LegitCamper/embassy" }
+embassy-time = { git = "https://github.com/LegitCamper/embassy", branch = "reject-device-qualifier" }
 # embassy-time = { path = "../embassy/embassy-time" }
-embassy-time-driver = { git = "https://github.com/LegitCamper/embassy" }
+embassy-time-driver = { git = "https://github.com/LegitCamper/embassy", branch = "reject-device-qualifier" }
 # embassy-time-driver = { path = "../embassy/embassy-time-driver" }
-embassy-time-queue-driver = { git = "https://github.com/LegitCamper/embassy" }
+embassy-time-queue-driver = { git = "https://github.com/LegitCamper/embassy", branch = "reject-device-qualifier" }
 # embassy-time-queue-driver = { path = "../embassy/embassy-time-queue-driver" }
 
 # These enable cyw24 bluetooth support 
