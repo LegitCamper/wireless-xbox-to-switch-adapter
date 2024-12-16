@@ -161,18 +161,21 @@ pub async fn handle_request(request: OutputReportEnum) -> Option<InputReport> {
 }
 
 fn spi_in_range(addr: u32, range: SPIRange) -> bool {
-    addr >= range.offset() && addr >= range.offset() + range.size() as u32
+    addr >= range.offset() && addr < range.offset() + range.size() as u32
 }
 
 fn handle_spi_read(addr: u32) -> Option<SPIReadResult> {
-    info!("GOT addr: {:x}", addr);
     if spi_in_range(addr, SensorCalibration::range()) {
+        info!("Sending factory motion calibration");
         Some(SensorCalibration::default().into())
     } else if spi_in_range(addr, UserSensorCalibration::range()) {
+        info!("Sending user motion calibration");
         Some(UserSensorCalibration::default().into())
     } else if spi_in_range(addr, SticksCalibration::range()) {
+        info!("Sending factory stick calibration");
         Some(SticksCalibration::default().into())
     } else if spi_in_range(addr, UserSticksCalibration::range()) {
+        info!("Sending user stick calibration");
         Some(
             UserSticksCalibration {
                 left: LeftUserStickCalibration::default(),
