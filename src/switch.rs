@@ -91,6 +91,8 @@ impl ControllerState {
             self.timer += 1
         }
 
+        info!("controller timer: {}", self.timer);
+
         StandardInputReport {
             timer: self.timer,
             info: self.status,
@@ -99,6 +101,18 @@ impl ControllerState {
             right_stick: self.right_stick,
             vibrator: 0,
         }
+    }
+
+    pub fn standard_full(&mut self) -> InputReport {
+        InputReportEnum::StandardFull((
+            self.standard(),
+            [
+                joycon_sys::imu::Frame::default(),
+                joycon_sys::imu::Frame::default(),
+                joycon_sys::imu::Frame::default(),
+            ],
+        ))
+        .into()
     }
 }
 

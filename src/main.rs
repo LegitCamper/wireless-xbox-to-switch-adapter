@@ -210,15 +210,14 @@ async fn notify(channel: Sender<'static, NoopRawMutex, [u8; 64], USB_RESPONSE_CH
     NOTIFY_SIGNAL.wait().await;
     loop {
         Timer::after_millis(8).await;
-        let report = joycon_sys::input::InputReportEnum::StandardAndSubcmd((
-            CONTROLLER_STATE.get().await.lock().await.standard(),
-            joycon_sys::input::SubcommandReply::from(
-                joycon_sys::input::SubcommandReplyEnum::RequestDeviceInfo(device_info()),
-            ),
-        ));
         channel
             .send(
-                joycon_sys::InputReport::from(report)
+                CONTROLLER_STATE
+                    .get()
+                    .await
+                    .lock()
+                    .await
+                    .standard_full()
                     .as_bytes()
                     .try_into()
                     .expect("Not the enough bytes"),
